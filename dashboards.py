@@ -6,7 +6,7 @@ import streamlit as st
 import modulos
 
 # configuração da página
-st.set_page_config(page_title='Dashboards Bois', layout='wide')
+st.set_page_config(page_title='Dashboards SpaceVis', layout='wide', page_icon=':bar_chart:')
 
 # leitura dos dados
 conc = pd.read_excel('novo_concatenado.xlsx')
