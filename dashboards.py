@@ -8,19 +8,10 @@ import connection
 # configuração da página
 st.set_page_config(page_title='Dashboards SpaceVis', layout='wide', page_icon=':bar_chart:')
 
-conn = connection.start_connection()
+#conn = connection.start_connection()
 
 # Iniciando query
-@st.cache_data
-def run_query(query):
-    with conn.cursor() as cursor:
-        cursor.execute(query=query)
-        return cursor.fetchall()
-    
 
-content = run_query("""
-SELECT * FROM public.BatteryView
-""")
 
 # leitura dos dados
 conc = pd.read_excel('novo_concatenado.xlsx')
