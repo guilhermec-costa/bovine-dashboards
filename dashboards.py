@@ -28,6 +28,7 @@ columns_name = run_query("""
 SELECT column_name FROM information_schema.columns
 WHERE table_schema = 'public' AND table_name   = 'viewdashboards';
 """)
+#Comentário aleatório
 
 colunas = [x[0] for x in columns_name]
 df = pd.DataFrame(content, columns=colunas)
