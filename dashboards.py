@@ -1,12 +1,26 @@
-import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 from datetime import datetime
 import streamlit as st
 import modulos
+import connection
 
 # configuração da página
 st.set_page_config(page_title='Dashboards SpaceVis', layout='wide', page_icon=':bar_chart:')
+
+conn = connection.start_connection()
+
+# Iniciando query
+@st.cache_data
+def run_query(query):
+    with conn.cursor() as cursor:
+        cursor.execute(query=query)
+        return cursor.fetchall()
+    
+
+content = run_query("""
+SELECT * FROM public.BatteryView
+""")
 
 # leitura dos dados
 conc = pd.read_excel('novo_concatenado.xlsx')
@@ -34,28 +48,31 @@ if len(filtro_plm) == 0:
 else:
     filtrado_plm = conc[conc['PLM'].isin(filtro_plm)]
 
+
+# Função que multiplica por 1000 os valores menores que 100.
 filtrado_plm['BATERIA'] = filtrado_plm['BATERIA'].apply(lambda x: modulos.multiplica(x))
 
 minimo = int(filtrado_plm['BATERIA'].min())
 maximo = int(filtrado_plm['BATERIA'].max())
 
 
-slider_bateria = st.slider(label='Range de bateria', value=[minimo,
-                                                            maximo
-                                                            ],
-                                                        min_value=minimo,
-                                                        max_value=maximo
+slider_bateria = st.slider(label='Range de bateria', value=[minimo, maximo],
+                                                    min_value=minimo,max_value=maximo
                         )
+
+# Função que filtra os dispostivos conforme o range de bateria selecionado no slider
 filtrado_plm = filtrado_plm[(filtrado_plm.BATERIA >= slider_bateria[0]) & (filtrado_plm.BATERIA <= slider_bateria[1])]
 
+# Filtro de datas
 inicio = pd.to_datetime(inicio)
 fim = pd.to_datetime(fim)
 filtrado = filtrado_plm[(filtrado_plm['Data correta'] >= inicio) & (filtrado_plm['Data correta'] <= fim)]
 
+# Agrupamentos por PLM
 agrupado = filtrado.groupby(by='PLM')
-
-
 fig = go.Figure()
+
+# Inserção de uma linha no gráfico para cada agrupamento de PLM
 for name, grupo in agrupado:
     grupo.sort_values(by='Data correta', inplace=True)
     grupo = grupo[grupo['Data correta'].dt.month > 4]
@@ -64,19 +81,15 @@ for name, grupo in agrupado:
                                                                                                 '<br>Data: %{x}</br>' + 
                                                                                                 '<i>Bateria: %{y}</i>',
                             ))
-    # fig.add_trace(go.Scatter(x=grupo['Data correta'], y=grupo['BATERIA'], mode="markers+lines", line_shape='spline', legendgroup=name))
-fig.update_layout(height=900, title=dict(text='Dashboards SpaceVis', xanchor='center',
-                                                     yanchor='top', x=0.5, y=0.93, font=dict(size=25)))
 
-
-fig.update_yaxes(tickfont=dict(size=16), title=dict(
-        text="Bateria", font=dict(size=16)))
-
+fig.update_layout(height=900, title=dict(text='Dashboards SpaceVis', xanchor='center',yanchor='top', 
+                                         x=0.5, y=0.93, font=dict(size=25)
+                                    ))
+fig.update_yaxes(tickfont=dict(size=16), title=dict(text="Bateria", font=dict(size=16)))
 fig.update_xaxes(tickfont=dict(size=16), title=dict(font=dict(size=16)))
 
-
+# alterando o design do cursor e da legenda
 modulos.alter_legend(fig=fig)
 modulos.alter_hover(fig=fig)
-
 
 st.plotly_chart(fig, use_container_width=True)
