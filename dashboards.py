@@ -1,10 +1,11 @@
 import plotly.graph_objects as go
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 import streamlit as st
 import modulos
-import connection
 import psycopg2 as pgsql
+from grid_builder import GridBuilder
+from filters import Filters, FilterOptions
 
 # configuração da página
 st.set_page_config(page_title='Dashboards SpaceVis', layout='wide', page_icon=':bar_chart:')
@@ -23,74 +24,81 @@ def run_query(query):
         return cursor.fetchall()
     
 
-content = run_query('SELECT * FROM public."viewdashboards";')
+def convert_to_timestamp(df, column:str):
+    df[column] = df[column].apply(lambda x: datetime.strptime(str(x), '%Y-%m-%dT%H:%M:%S.%f%z'))
+    
+
+content = run_query('SELECT * FROM public."bovinedashboard";')
 columns_name = run_query("""
 SELECT column_name FROM information_schema.columns
-WHERE table_schema = 'public' AND table_name   = 'viewdashboards';
+WHERE table_schema = 'public' AND table_name   = 'bovinedashboard';
 """)
-#Comentário aleatório
 
 colunas = [x[0] for x in columns_name]
 df = pd.DataFrame(content, columns=colunas)
-# df['LastCommunication'] = df['LastCommunication'].apply(lambda x: datetime.strptime(x, '%d/%m/%Y %H:%M:%S%z'))
-st.write(df)
+vw_tab_aggrid = GridBuilder(df, key='filtered_df.df')
+tab_formatada, bovine_data = vw_tab_aggrid.grid_builder()
+
+# Conversão de datas para o formato timestamp do banco
+convert_to_timestamp(bovine_data, 'payloaddatetime')
+convert_to_timestamp(bovine_data, 'LastCommunication')
+convert_to_timestamp(bovine_data, 'CreatedAt')
 
 # leitura dos dados
-conc = df
-# conc = pd.read_excel('novo_concatenado.xlsx')
-conc.dropna(axis=0, how='any', inplace=True)
-
-
-#conversão para datas
-# conc['Data correta'] = conc['Data correta'].apply(lambda x: datetime.strptime(x, '%d/%m/%Y %H:%M:%S'))
+bovine_data.dropna(axis=0, how='any', inplace=True)
 
 c1, c2 = st.columns(2)
+filtered_df = Filters(data_frame=bovine_data)
 
-# filtro de ddtas
-inicio = c1.date_input(label='Data de ínicio:', min_value=conc['CreatedAt'].min(),
-                        key='data_inicio', value=datetime(2023, 5, 14))
-fim = c2.date_input(label='Data de fim:', min_value=conc['CreatedAt'].min(), 
-                    key='data_fim', value=datetime.now())
+# filtro de datas
+inicio = c1.date_input(label='Data de ínicio:', min_value=filtered_df.df['CreatedAt'].min() + timedelta(days=-1),
+                        key='data_inicio', value=filtered_df.df['CreatedAt'].min() + timedelta(days=-1))
+fim = c2.date_input(label='Data de fim:', min_value=filtered_df.df['CreatedAt'].min(), 
+                    key='data_fim', value=datetime.now() + timedelta(days=1))
+
+inicio = pd.to_datetime(inicio, utc=True)
+fim = pd.to_datetime(fim, utc=True)
+
+filtered_df.apply_date_filter(start=inicio, end=fim, refer_column='payloaddatetime')
 
 
-# filtro de PLMs
-filtro_plm = st.multiselect(label='Filtro de PLM"s', options=conc['PLM'].unique())
+c1__farm, c2_plm, c3_deveui = st.columns(3)
+farm_filter_opcs = c1__farm.multiselect(label='Filtro de fazenda', options=filtered_df.df['Name'].unique())
+if len(farm_filter_opcs) == 0:
+    pass
 
-# verificando se há ou não PLM's filtradas. Caso não haja, o df é igual. Caso haja, o filtro é aplicado
-if len(filtro_plm) == 0:
-    filtrado_plm = conc
-else:
-    filtrado_plm = conc[conc['PLM'].isin(filtro_plm)]
+
+plm_filter_options = c2_plm.multiselect(label='Filtro de PLM"s', options=filtered_df.df['PLM'].unique())
+deveui_filter_options = c3_deveui.multiselect(label='Filtro de DevEUI', options=filtered_df.df['Identifier'].unique())
+
+if len(plm_filter_options) >= 1: # precisa ser outro if
+    filtered_df.apply_plm_filter(options=plm_filter_options)
+
+# if len(deveui_filter_options) >= 1:
+#     st.write(deveui_filter_options)
+#     filtered_df.apply_deveui_filter(options=deveui_filter_options)
 
 
 # Função que multiplica por 1000 os valores menores que 100.
-filtrado_plm['battery'] = filtrado_plm['battery'].apply(lambda x: modulos.multiplica(x))
+filtered_df.df['battery'] = filtered_df.df['battery'].apply(lambda x: modulos.multiplica(x))
+minimo = int(filtered_df.df['battery'].min())
+maximo = int(filtered_df.df['battery'].max())
 
-minimo = int(filtrado_plm['battery'].min())
-maximo = int(filtrado_plm['battery'].max())
 
-
-slider_bateria = st.slider(label='Range de bateria', value=[minimo, maximo],
-                                                    min_value=minimo,max_value=maximo
-                        )
+slider_bateria = st.slider(label='Range de bateria', value=[minimo, maximo], min_value=minimo,max_value=maximo)                  
 
 # Função que filtra os dispostivos conforme o range de bateria selecionado no slider
-filtrado_plm = filtrado_plm[(filtrado_plm.battery >= slider_bateria[0]) & (filtrado_plm.battery <= slider_bateria[1])]
-
-# Filtro de datas
-inicio = pd.to_datetime(inicio, utc=True)
-fim = pd.to_datetime(fim, utc=True)
-filtrado = filtrado_plm[(filtrado_plm['LastCommunication'] >= inicio) & (filtrado_plm['LastCommunication'] <= fim)]
+filtered_df.df = filtered_df.df[(filtered_df.df.battery >= slider_bateria[0]) & (filtered_df.df.battery <= slider_bateria[1])]
 
 # Agrupamentos por PLM
-agrupado = filtrado.groupby(by='PLM')
+agrupado = filtered_df.df.groupby(by='PLM')
 fig = go.Figure()
 
 # Inserção de uma linha no gráfico para cada agrupamento de PLM
 for name, grupo in agrupado:
-    grupo.sort_values(by='LastCommunication', inplace=True)
-    grupo = grupo[grupo['LastCommunication'].dt.month > 4]
-    fig.add_trace(go.Scatter(x=grupo['LastCommunication'], y=grupo['battery'], 
+    grupo.sort_values(by='payloaddatetime', inplace=True)
+    grupo = grupo[grupo['payloaddatetime'].dt.month > 4]
+    fig.add_trace(go.Scatter(x=grupo['payloaddatetime'], y=grupo['battery'], 
                             mode="markers+lines", line_shape='spline', name=name, hovertemplate= f'<i>PLM: {name}</i>' + 
                                                                                                 '<br>Data: %{x}</br>' + 
                                                                                                 '<i>Bateria: %{y}</i>',
