@@ -58,13 +58,12 @@ filtered_df.apply_date_filter(start=inicio, end=fim, refer_column='payloaddateti
 
 c1__farm, c2_plm = st.columns(2)
 farm_filter_opcs = c1__farm.multiselect(label='Filtro de fazenda', options=filtered_df.df['Name'].unique())
-plm_filter_options = c2_plm.multiselect(label='Filtro de PLM"s', options=filtered_df.df['PLM'].unique())
-
 if len(farm_filter_opcs) == 0:
     pass
 else:
     filtered_df.df = filtered_df.df[filtered_df.df['Name'].isin(farm_filter_opcs)]
 
+plm_filter_options = c2_plm.multiselect(label='Filtro de PLM"s', options=filtered_df.df['PLM'].unique())
 if len(plm_filter_options) >= 1: # precisa ser outro if
     filtered_df.apply_plm_filter(options=plm_filter_options)
 
