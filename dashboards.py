@@ -25,7 +25,7 @@ def run_query(query):
     
 
 def convert_to_timestamp(df, column:str):
-    df[column] = df[column].apply(lambda x: datetime.strptime(str(x), '%Y-%m-%dT%H:%M:%S.%f%z'))
+    df[column] = df[column].apply(lambda x: datetime.fromisoformat(str(x)))
     
 
 content = run_query('SELECT * FROM public."bovinedashboard";')
@@ -48,10 +48,6 @@ convert_to_timestamp(bovine_data, 'CreatedAt')
 # leitura dos dados
 bovine_data.dropna(axis=0, how='any', inplace=True)
 
-
-#conversão para datas
-# df['Data correta'] = df['Data correta'].apply(lambda x: datetime.strptime(x, '%d/%m/%Y %H:%M:%S'))
-
 c1, c2 = st.columns(2)
 filtered_df = Filters(data_frame=bovine_data)
 
@@ -63,8 +59,10 @@ fim = c2.date_input(label='Data de fim:', min_value=filtered_df.df['CreatedAt'].
 
 inicio = pd.to_datetime(inicio, utc=True)
 fim = pd.to_datetime(fim, utc=True)
+st.write(inicio, fim)
 
 filtered_df.apply_date_filter(start=inicio, end=fim, refer_column='payloaddatetime')
+st.write(filtered_df.df)
 
 
 c1__farm, c2_plm = st.columns(2)
