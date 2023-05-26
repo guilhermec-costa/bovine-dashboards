@@ -1,6 +1,8 @@
 import plotly.graph_objects as go
 from .update_fig_elements import alter_hover, alter_legend
-def plot_scatter_plm(data):
+import pandas as pd
+
+def plot_scatter_plm(data, date_period):
     fig = go.Figure()
     for name, groups in data:
         groups.sort_values(by='payloaddatetime', inplace=True)
@@ -10,12 +12,18 @@ def plot_scatter_plm(data):
                                                                                                 '<br>Data: %{x}</br>' + 
                                                                                                 '<i>Bateria: %{y}</i>')
                 )
-        
-    fig.update_layout(height=900, title=dict(text='Dashboards SpaceVis', xanchor='center',yanchor='top', 
+    
+    start_day, end_day = [date_period[0].day, date_period[1].day]
+    start_month, end_month = [date_period[0].month, date_period[1].month]
+    start_year, end_year = [date_period[0].year, date_period[1].year]
+
+    fig.update_layout(height=900, title=dict(text=f'Nível de bateria por boi - {start_day}/{start_month}/{start_year} a {end_day}/{end_month}/{end_year}', xanchor='center',yanchor='top', 
                                         x=0.5, y=0.93, font=dict(size=25)
                                         ))
-    fig.update_yaxes(tickfont=dict(size=16), title=dict(text="Bateria", font=dict(size=16)))
-    fig.update_xaxes(tickfont=dict(size=16), title=dict(font=dict(size=16)))
+    
+    fig.update_yaxes(tickfont=dict(size=16), title=dict(text="Nível de bateria", font=dict(size=18)))
+    fig.update_xaxes(tickfont=dict(size=16), title=dict(font=dict(size=16)),
+                     showgrid=True, griddash='dash')
 
     # alterando o design do cursor e da legenda
     alter_legend(fig=fig)

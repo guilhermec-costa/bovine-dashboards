@@ -3,12 +3,16 @@ from datetime import datetime, timedelta
 import streamlit as st
 import psycopg2 as pgsql
 from grid_builder import GridBuilder
-from filters import Filters, FilterOptions
+from filters import Filters
 from figures.Bovine_plms import plot_scatter_plm
 import queries.bovine_query as bovn_q
+from data_treatement.data_dealer import *
 
 # configuração da página
 st.set_page_config(page_title='Dashboards SpaceVis', layout='wide', page_icon=':bar_chart:')
+update_database = st.button(label='Atualizar base de dados', type='primary')
+if update_database:
+    st.experimental_rerun()
 
 @st.cache_resource
 def start_connection():
@@ -19,15 +23,10 @@ def start_connection():
 def run_query(query):
     with conn.cursor() as cursor:
         cursor.execute(query)
-        return cursor.fetchall()
+        return cursor.fetchall()    
+
+conn = start_connection()
     
-
-conn = start_connection()  
-
-def convert_to_timestamp(df, column:str):
-    df[column] = df[column].apply(lambda x: datetime.fromisoformat(str(x)))
-    
-
 content = run_query(bovn_q.QUERY_BOVINE_DASHBOARD)
 columns_name = run_query(bovn_q.COLUMNS_TO_DATAFRAME)
 
@@ -37,13 +36,11 @@ df = pd.DataFrame(content, columns=colunas)
 vw_tab_aggrid = GridBuilder(df, key='filtered_df.df')
 tab_formatada, bovine_data = vw_tab_aggrid.grid_builder()
 
-# Conversão de datas para o formato timestamp do banco
+# tratamento dos dados
 convert_to_timestamp(bovine_data, 'payloaddatetime')
 convert_to_timestamp(bovine_data, 'LastCommunication')
 convert_to_timestamp(bovine_data, 'CreatedAt')
-
-# leitura dos dados
-bovine_data.dropna(axis=0, how='any', inplace=True)
+clear_rows(bovine_data)
 
 c1, c2 = st.columns(2)
 filtered_df = Filters(data_frame=bovine_data)
@@ -59,20 +56,17 @@ fim = pd.to_datetime(fim, utc=True)
 
 filtered_df.apply_date_filter(start=inicio, end=fim, refer_column='payloaddatetime')
 
-
 c1__farm, c2_plm = st.columns(2)
 farm_filter_opcs = c1__farm.multiselect(label='Filtro de fazenda', options=filtered_df.df['Name'].unique())
+plm_filter_options = c2_plm.multiselect(label='Filtro de PLM"s', options=filtered_df.df['PLM'].unique())
+
 if len(farm_filter_opcs) == 0:
     pass
 else:
     filtered_df.df = filtered_df.df[filtered_df.df['Name'].isin(farm_filter_opcs)]
 
-plm_filter_options = c2_plm.multiselect(label='Filtro de PLM"s', options=filtered_df.df['PLM'].unique())
-# deveui_filter_options = c3_deveui.multiselect(label='Filtro de DevEUI', options=filtered_df.df['Identifier'].unique())
-
 if len(plm_filter_options) >= 1: # precisa ser outro if
     filtered_df.apply_plm_filter(options=plm_filter_options)
-
 
 # Função que multiplica por 1000 os valores menores que 100.
 filtered_df.df['battery'] = filtered_df.df['battery'].apply(lambda x: x * 1000 if x < 100 else x)
@@ -84,12 +78,9 @@ slider_bateria = st.slider(label='Range de bateria', value=[minimo, maximo], min
 # Função que filtra os dispostivos conforme o range de bateria selecionado no slider
 filtered_df.df = filtered_df.df[(filtered_df.df.battery >= slider_bateria[0]) & (filtered_df.df.battery <= slider_bateria[1])]
 
-# Filtro de datas
-
 # Agrupamentos por PLM
 agrupado = filtered_df.df.groupby(by='PLM')
-bovine_chart = plot_scatter_plm(agrupado)
+bovine_chart = plot_scatter_plm(agrupado, date_period=[inicio, fim])
 
-# Inserção de uma linha no gráfico para cada agrupamento de PLM
 
 st.plotly_chart(bovine_chart, use_container_width=True)
