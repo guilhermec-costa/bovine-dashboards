@@ -36,6 +36,7 @@ WHERE table_schema = 'public' AND table_name   = 'bovinedashboard';
 
 colunas = [x[0] for x in columns_name]
 df = pd.DataFrame(content, columns=colunas)
+# df['payloaddatetime'] = df['payloaddatetime'].apply(lambda x: datetime.strptime(x, '%d/%m/%Y %H:%M:%S%z'))
 vw_tab_aggrid = GridBuilder(df, key='filtered_df.df')
 tab_formatada, bovine_data = vw_tab_aggrid.grid_builder()
 
@@ -46,6 +47,10 @@ convert_to_timestamp(bovine_data, 'CreatedAt')
 
 # leitura dos dados
 bovine_data.dropna(axis=0, how='any', inplace=True)
+
+
+#conversão para datas
+# df['Data correta'] = df['Data correta'].apply(lambda x: datetime.strptime(x, '%d/%m/%Y %H:%M:%S'))
 
 c1, c2 = st.columns(2)
 filtered_df = Filters(data_frame=bovine_data)
@@ -62,14 +67,15 @@ fim = pd.to_datetime(fim, utc=True)
 filtered_df.apply_date_filter(start=inicio, end=fim, refer_column='payloaddatetime')
 
 
-c1__farm, c2_plm, c3_deveui = st.columns(3)
+c1__farm, c2_plm = st.columns(2)
 farm_filter_opcs = c1__farm.multiselect(label='Filtro de fazenda', options=filtered_df.df['Name'].unique())
 if len(farm_filter_opcs) == 0:
     pass
-
+else:
+    filtered_df.df = filtered_df.df[filtered_df.df['Name'].isin(farm_filter_opcs)]
 
 plm_filter_options = c2_plm.multiselect(label='Filtro de PLM"s', options=filtered_df.df['PLM'].unique())
-deveui_filter_options = c3_deveui.multiselect(label='Filtro de DevEUI', options=filtered_df.df['Identifier'].unique())
+# deveui_filter_options = c3_deveui.multiselect(label='Filtro de DevEUI', options=filtered_df.df['Identifier'].unique())
 
 if len(plm_filter_options) >= 1: # precisa ser outro if
     filtered_df.apply_plm_filter(options=plm_filter_options)
@@ -78,17 +84,24 @@ if len(plm_filter_options) >= 1: # precisa ser outro if
 #     st.write(deveui_filter_options)
 #     filtered_df.apply_deveui_filter(options=deveui_filter_options)
 
+# verificando se há ou não PLM's filtradas. Caso não haja, o df é igual. Caso haja, o filtro é aplicado
+
 
 # Função que multiplica por 1000 os valores menores que 100.
 filtered_df.df['battery'] = filtered_df.df['battery'].apply(lambda x: modulos.multiplica(x))
+
 minimo = int(filtered_df.df['battery'].min())
 maximo = int(filtered_df.df['battery'].max())
 
 
-slider_bateria = st.slider(label='Range de bateria', value=[minimo, maximo], min_value=minimo,max_value=maximo)                  
+slider_bateria = st.slider(label='Range de bateria', value=[minimo, maximo],
+                                                    min_value=minimo,max_value=maximo
+                        )
 
 # Função que filtra os dispostivos conforme o range de bateria selecionado no slider
 filtered_df.df = filtered_df.df[(filtered_df.df.battery >= slider_bateria[0]) & (filtered_df.df.battery <= slider_bateria[1])]
+
+# Filtro de datas
 
 # Agrupamentos por PLM
 agrupado = filtered_df.df.groupby(by='PLM')
