@@ -1,11 +1,11 @@
-import plotly.graph_objects as go
 import pandas as pd
 from datetime import datetime, timedelta
 import streamlit as st
-import modulos
 import psycopg2 as pgsql
 from grid_builder import GridBuilder
 from filters import Filters, FilterOptions
+from figures.Bovine_plms import plot_scatter_plm
+import queries.bovine_query as bovn_q
 
 # configuração da página
 st.set_page_config(page_title='Dashboards SpaceVis', layout='wide', page_icon=':bar_chart:')
@@ -13,8 +13,6 @@ st.set_page_config(page_title='Dashboards SpaceVis', layout='wide', page_icon=':
 @st.cache_resource
 def start_connection():
     return pgsql.connect(**st.secrets['postgres'])
-
-conn = start_connection()
 
 # Iniciando query
 @st.cache_data(ttl=600)
@@ -24,15 +22,14 @@ def run_query(query):
         return cursor.fetchall()
     
 
+conn = start_connection()  
+
 def convert_to_timestamp(df, column:str):
     df[column] = df[column].apply(lambda x: datetime.fromisoformat(str(x)))
     
 
-content = run_query('SELECT * FROM public."bovinedashboard";')
-columns_name = run_query("""
-SELECT column_name FROM information_schema.columns
-WHERE table_schema = 'public' AND table_name   = 'bovinedashboard';
-""")
+content = run_query(bovn_q.QUERY_BOVINE_DASHBOARD)
+columns_name = run_query(bovn_q.COLUMNS_TO_DATAFRAME)
 
 colunas = [x[0] for x in columns_name]
 df = pd.DataFrame(content, columns=colunas)
@@ -76,23 +73,13 @@ plm_filter_options = c2_plm.multiselect(label='Filtro de PLM"s', options=filtere
 if len(plm_filter_options) >= 1: # precisa ser outro if
     filtered_df.apply_plm_filter(options=plm_filter_options)
 
-# if len(deveui_filter_options) >= 1:
-#     st.write(deveui_filter_options)
-#     filtered_df.apply_deveui_filter(options=deveui_filter_options)
-
-# verificando se há ou não PLM's filtradas. Caso não haja, o df é igual. Caso haja, o filtro é aplicado
-
 
 # Função que multiplica por 1000 os valores menores que 100.
-filtered_df.df['battery'] = filtered_df.df['battery'].apply(lambda x: modulos.multiplica(x))
+filtered_df.df['battery'] = filtered_df.df['battery'].apply(lambda x: x * 1000 if x < 100 else x)
 
 minimo = int(filtered_df.df['battery'].min())
 maximo = int(filtered_df.df['battery'].max())
-
-
-slider_bateria = st.slider(label='Range de bateria', value=[minimo, maximo],
-                                                    min_value=minimo,max_value=maximo
-                        )
+slider_bateria = st.slider(label='Range de bateria', value=[minimo, maximo], min_value=minimo,max_value=maximo)
 
 # Função que filtra os dispostivos conforme o range de bateria selecionado no slider
 filtered_df.df = filtered_df.df[(filtered_df.df.battery >= slider_bateria[0]) & (filtered_df.df.battery <= slider_bateria[1])]
@@ -101,26 +88,8 @@ filtered_df.df = filtered_df.df[(filtered_df.df.battery >= slider_bateria[0]) & 
 
 # Agrupamentos por PLM
 agrupado = filtered_df.df.groupby(by='PLM')
-fig = go.Figure()
+bovine_chart = plot_scatter_plm(agrupado)
 
 # Inserção de uma linha no gráfico para cada agrupamento de PLM
-for name, grupo in agrupado:
-    grupo.sort_values(by='payloaddatetime', inplace=True)
-    grupo = grupo[grupo['payloaddatetime'].dt.month > 4]
-    fig.add_trace(go.Scatter(x=grupo['payloaddatetime'], y=grupo['battery'], 
-                            mode="markers+lines", line_shape='spline', name=name, hovertemplate= f'<i>PLM: {name}</i>' + 
-                                                                                                '<br>Data: %{x}</br>' + 
-                                                                                                '<i>Bateria: %{y}</i>',
-                            ))
 
-fig.update_layout(height=900, title=dict(text='Dashboards SpaceVis', xanchor='center',yanchor='top', 
-                                         x=0.5, y=0.93, font=dict(size=25)
-                                    ))
-fig.update_yaxes(tickfont=dict(size=16), title=dict(text="Bateria", font=dict(size=16)))
-fig.update_xaxes(tickfont=dict(size=16), title=dict(font=dict(size=16)))
-
-# alterando o design do cursor e da legenda
-modulos.alter_legend(fig=fig)
-modulos.alter_hover(fig=fig)
-
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(bovine_chart, use_container_width=True)
