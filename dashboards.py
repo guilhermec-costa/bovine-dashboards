@@ -59,10 +59,8 @@ fim = c2.date_input(label='Data de fim:', min_value=filtered_df.df['CreatedAt'].
 
 inicio = pd.to_datetime(inicio, utc=True)
 fim = pd.to_datetime(fim, utc=True)
-st.write(inicio, fim)
 
 filtered_df.apply_date_filter(start=inicio, end=fim, refer_column='payloaddatetime')
-st.write(filtered_df.df)
 
 
 c1__farm, c2_plm = st.columns(2)
