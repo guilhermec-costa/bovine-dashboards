@@ -47,8 +47,8 @@ class GridBuilder:
     def grid_builder(self, height=500):
 
         tab = AgGrid(self.data, gridOptions=self.gdoptions,
-                     theme="streamlit", key=self.grid_key, fit_columns_on_grid_load=True, height=height,
+                     theme="alpine", key=self.grid_key, height=height,
                      update_mode=self.updatemode, data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
-                     )
+                     columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS)
 
         return tab, tab.data

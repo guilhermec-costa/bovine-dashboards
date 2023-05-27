@@ -10,9 +10,6 @@ from data_treatement.data_dealer import *
 
 # configuração da página
 st.set_page_config(page_title='Dashboards SpaceVis', layout='wide', page_icon=':bar_chart:')
-update_database = st.button(label='Atualizar base de dados', type='primary')
-if update_database:
-    st.experimental_rerun()
 
 @st.cache_resource
 def start_connection():
@@ -29,10 +26,38 @@ conn = start_connection()
     
 content = run_query(bovn_q.QUERY_BOVINE_DASHBOARD)
 columns_name = run_query(bovn_q.COLUMNS_TO_DATAFRAME)
+bovine_registers = run_query(bovn_q.BOVINE_NUMBER)[0][0]
+battery_mean_last30days = float(run_query(bovn_q.BATTERY_MEAN_LAST_30DAYS)[0][0])
+battery_mean_last24hours = float(run_query(bovn_q.BATTERY_MEAN_LAST_24HOURS)[0][0])
+diff_last_day = round(battery_mean_last24hours - float(run_query(bovn_q.BATTERY_MEAN_LAST_48HOURS)[0][0]), 2)
 
 colunas = [x[0] for x in columns_name]
 df = pd.DataFrame(content, columns=colunas)
 # df['payloaddatetime'] = df['payloaddatetime'].apply(lambda x: datetime.strptime(x, '%d/%m/%Y %H:%M:%S%z'))
+
+# Função que multiplica por 1000 os valores menores que 100.
+df['battery'] = df['battery'].apply(lambda x: x * 1000 if x < 100 else x)
+
+metric1, metric2, metric3, *_ = st.columns(4, gap='small')
+with open('style.css', 'r') as style:
+    st.markdown(f'<style>{style.read()}</style>', unsafe_allow_html=True)
+
+    metric1.metric(label='Bois cadastrados', value=bovine_registers)
+    metric2.metric(label='Média de bateria últimos 30 dias', value=battery_mean_last30days)
+    metric3.metric(label='Bateria média últimas 24 horas', value=battery_mean_last24hours, 
+                   delta=diff_last_day,
+                   help='Comparação entre o nível de bateria da data atual com as últimas 48 horas.')
+    st.markdown('---')
+
+button1, button2, *_ = st.columns(8, gap='small')
+update_database = button1.button(label='Atualizar base de dados', type='primary')
+if update_database:
+    st.experimental_rerun()
+
+download_database = button2.download_button(label='Baixar tabela', data=df.to_csv(), file_name='novo_arquivo.csv',
+                                            mime='text/csv')
+    
+
 vw_tab_aggrid = GridBuilder(df, key='filtered_df.df')
 tab_formatada, bovine_data = vw_tab_aggrid.grid_builder()
 
@@ -67,8 +92,6 @@ plm_filter_options = c2_plm.multiselect(label='Filtro de PLM"s', options=filtere
 if len(plm_filter_options) >= 1: # precisa ser outro if
     filtered_df.apply_plm_filter(options=plm_filter_options)
 
-# Função que multiplica por 1000 os valores menores que 100.
-filtered_df.df['battery'] = filtered_df.df['battery'].apply(lambda x: x * 1000 if x < 100 else x)
 
 minimo = int(filtered_df.df['battery'].min())
 maximo = int(filtered_df.df['battery'].max())
