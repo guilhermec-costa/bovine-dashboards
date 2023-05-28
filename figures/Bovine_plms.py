@@ -17,10 +17,10 @@ def plot_scatter_plm(data, date_period):
     start_month, end_month = [date_period[0].month, date_period[1].month]
     start_year, end_year = [date_period[0].year, date_period[1].year]
 
-    fig.update_layout(height=900, title=dict(text=f'Nível de bateria por boi - {start_day}/{start_month}/{start_year} a {end_day}/{end_month}/{end_year}', xanchor='center',yanchor='top', 
+    fig.update_layout(height=900, title=dict(text=f'Battery level per bovine - {start_year}/{start_month}/{start_day} till {end_year}/{end_month}/{end_day}', xanchor='center',yanchor='top', 
                                         x=0.5, y=0.93, font=dict(size=25)
                                         ),
-                    legend=dict(orientation='h', yanchor='bottom', y=-0.5))
+                    legend=dict(orientation='v'), template='seaborn')
     
     fig.update_yaxes(tickfont=dict(size=16), title=dict(text="Nível de bateria", font=dict(size=16)))
     fig.update_xaxes(tickfont=dict(size=16), title=dict(font=dict(size=16)),

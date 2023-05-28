@@ -19,6 +19,9 @@ class Filters:
 
     def return_data_frame(self):
         return self.df
+    
+    def apply_battery_filter(self, bat_min, bat_max):
+        self.df = self.df[(self.df.battery >= bat_min) & (self.df.battery <= bat_max)]
 
 class FilterOptions(Filters):
    def return_filter_opcs(self):
