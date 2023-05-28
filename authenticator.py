@@ -14,6 +14,6 @@ login_authenticator = stauth.Authenticate(
     config['preauthorized']
 )
 
-
-# hashed_passwords = stauth.Hasher(['teste']).generate()
-# print(hashed_passwords)
+if __name__ == '__main__':
+    hashed_passwords = stauth.Hasher(['spacevis2023']).generate()
+    print(hashed_passwords)
