@@ -8,15 +8,18 @@ from figures.Bovine_plms import plot_scatter_plm
 import queries.bovine_query as bovn_q
 from data_treatement.data_dealer import *
 from streamlit_extras.metric_cards import style_metric_cards
-from login_user import start_login
+# from login_user import start_login
+from authenticator import login_authenticator
 
 # configuração da página
 
-def start_app(login_object, user):
+def start_app(user):
     st.set_page_config(layout='wide')
+    st.session_state['authentication_status'] = False
+
     *_, logout = st.columns(12)
     with logout:
-        logout = login_object.logout('Logout', 'main')
+        logout = login_authenticator.logout('Logout', 'main')
     st.success(f'Your welcome {user.capitalize()}!')
     st.markdown('###')
 
@@ -55,8 +58,7 @@ def start_app(login_object, user):
     metric1, metric2, metric3, *_ = st.columns(4, gap='small')
     metric1.metric(label='Registred bovines', value=bovine_registers)
     metric2.metric(label='Medium battery on last 30 days', value=battery_mean_last_month)
-    metric3.metric(label='last 24 hours battery perfomance',
-                    value=battery_mean_last24hours, 
+    metric3.metric(label='last 24 hours battery perfomance', value=battery_mean_last24hours, 
                     delta=diff_last_day,
                     help='last 24 hours battery performance in comparison with the 48 last hours battery perfomance')
     style_metric_cards(background_color='#6D23FF', border_size_px=1.5, 
@@ -118,9 +120,20 @@ def start_app(login_object, user):
 
     st.plotly_chart(bovine_chart, use_container_width=True)
 
-try:
-    login, login_object, username = start_login()
-    if login:
-        start_app(login_object=login_object, user=username)
-except:
-    pass
+def initialize_session_state():
+    # Inicialize as chaves necessárias no st.session_state
+    if 'authentication_status' not in st.session_state:
+        st.session_state['authentication_status'] = None
+    if 'name' not in st.session_state:
+        st.session_state['name'] = False
+
+
+if __name__ == '__main__':
+    initialize_session_state()
+    name, authentication_status, username = login_authenticator.login(form_name='Login', location='main')
+    if authentication_status:
+        start_app(user=username)
+    if authentication_status is None:
+        pass
+    else:
+        st.error('Be sure your credentials are correct')
