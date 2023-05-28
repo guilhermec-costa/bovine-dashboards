@@ -7,3 +7,5 @@ plotly==5.14.0
 psycopg2-binary==2.9.6
 streamlit-aggrid==0.3.3
 streamlit-option-menu==0.3.2
+streamlit-extras==0.2.7
+streamlit-authenticator==0.2.2
