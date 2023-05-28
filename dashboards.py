@@ -15,7 +15,7 @@ from authenticator import login_authenticator
 
 def start_app(user):
     st.set_page_config(layout='wide')
-    st.session_state['authentication_status'] = False
+    # st.session_state['authentication_status'] = None
 
     *_, logout = st.columns(12)
     with logout:
@@ -133,7 +133,7 @@ if __name__ == '__main__':
     name, authentication_status, username = login_authenticator.login(form_name='Login', location='main')
     if authentication_status:
         start_app(user=username)
-    if authentication_status is None:
+    elif authentication_status is None:
         pass
     else:
         st.error('Be sure your credentials are correct')
