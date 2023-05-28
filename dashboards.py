@@ -8,16 +8,25 @@ from figures.Bovine_plms import plot_scatter_plm
 import queries.bovine_query as bovn_q
 from data_treatement.data_dealer import *
 from streamlit_extras.metric_cards import style_metric_cards
-# from login_user import start_login
 from authenticator import login_authenticator
+import new_user_form
 
 # configuração da página
 
 def start_app(user):
+    st.session_state.new_user = False
+
     st.set_page_config(layout='wide')
     # st.session_state['authentication_status'] = None
+    *_, add_user, logout = st.columns(12)
+    # if user == 'admin':
+    #     with add_user:
+    #         new_user = st.button('Register new user')
+    #     if new_user:
+    #         # show_pages([Page('new_user_form.py'),])+
+    #         new_user_form.register_user()
 
-    *_, logout = st.columns(12)
+
     with logout:
         logout = login_authenticator.logout('Logout', 'main')
     st.success(f'Your welcome {user.capitalize()}!')
@@ -56,7 +65,7 @@ def start_app(user):
     df['battery'] = df['battery'].apply(lambda x: x * 1000 if x < 100 else x)
 
     metric1, metric2, metric3, *_ = st.columns(4, gap='small')
-    metric1.metric(label='Registred bovines', value=bovine_registers)
+    metric1.metric(label='Registred bovines', value=bovine_registers, delta=f'')
     metric2.metric(label='Medium battery on last 30 days', value=battery_mean_last_month)
     metric3.metric(label='last 24 hours battery perfomance', value=battery_mean_last24hours, 
                     delta=diff_last_day,
@@ -66,7 +75,6 @@ def start_app(user):
     # st.divider()
 
     button1, button2, *_ = st.columns(8, gap='small')
-    update_database = button1.button(label='Update database', type='primary')
 
     download_database = button2.download_button(label='Download data', data=df.to_csv(), file_name='novo_arquivo.csv',
                                                 mime='text/csv')
@@ -129,11 +137,14 @@ def initialize_session_state():
 
 
 if __name__ == '__main__':
-    initialize_session_state()
-    name, authentication_status, username = login_authenticator.login(form_name='Login', location='main')
-    if authentication_status:
-        start_app(user=username)
-    elif authentication_status is None:
-        pass
-    else:
-        st.error('Be sure your credentials are correct')
+        initialize_session_state()
+        name, authentication_status, username = login_authenticator.login(form_name='Login', location='main')
+        try:
+            if authentication_status:
+                start_app(user=username)
+            elif authentication_status is None:
+                pass
+            else:
+                st.error('Be sure your credentials are correct')
+        except Exception as error:
+            st.error(error)

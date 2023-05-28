@@ -1,0 +1,17 @@
+cookie:
+  expiry_days: 0
+  key: random key
+  name: lil cookie
+credentials:
+  usernames:
+    admin:
+      email: echina725@gmail.com
+      name: Guilherme China
+      password: $2b$12$BYOE3mmqvAsO4MLFAUCjmuN0jNqSNGDw7CzesvH7AunzscoROzroy
+    general:
+      email:
+      name:
+      password: $2b$12$mR0EC/lD3SY8QvbqKcU5C.9rUHG61ymmo7pxhghbr8qZO364yf52C
+preauthorized:
+  emails:
+  - echina725@gmail.com
