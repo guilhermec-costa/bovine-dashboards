@@ -137,14 +137,11 @@ def initialize_session_state():
 
 
 if __name__ == '__main__':
-        initialize_session_state()
-        name, authentication_status, username = login_authenticator.login(form_name='Login', location='main')
-        try:
-            if authentication_status:
-                start_app(user=username)
-            elif authentication_status is None:
-                pass
-            else:
-                st.error('Be sure your credentials are correct')
-        except Exception as error:
-            st.error(error)
+    initialize_session_state()
+    name, authentication_status, username = login_authenticator.login(form_name='Login', location='main')
+    if authentication_status:
+        start_app(user=username)
+    elif authentication_status is None:
+        pass
+    else:
+        st.error('Be sure your credentials are correct')
