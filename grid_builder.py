@@ -49,6 +49,6 @@ class GridBuilder:
         tab = AgGrid(self.data, gridOptions=self.gdoptions,
                      theme="balham", key=self.grid_key, height=height,
                      update_mode=self.updatemode, data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
-                     columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS)
+                     columns_auto_size_mode=ColumnsAutoSizeMode.FIT_ALL_COLUMNS_TO_VIEW)
 
         return tab, tab.data
