@@ -9,9 +9,9 @@ credentials:
       name: Guilherme China
       password: $2b$12$BYOE3mmqvAsO4MLFAUCjmuN0jNqSNGDw7CzesvH7AunzscoROzroy
     general:
-      email:
-      name:
-      password: $2b$12$mR0EC/lD3SY8QvbqKcU5C.9rUHG61ymmo7pxhghbr8qZO364yf52C
+      email: johndoe@email.com
+      name: general user
+      password: $2b$12$F91s7k69iTm5likjBRInkeVpx75w1g3IpXVAzUWKwCFV0rcy87zLC
 preauthorized:
   emails:
   - echina725@gmail.com
