@@ -27,7 +27,7 @@ def plot_scatter_plm(data, date_period):
                      showgrid=True, griddash='dash')
 
     # alterando o design do cursor e da legenda
-    alter_legend(fig=fig)
+    alter_legend(fig=fig, title='PLM')
     alter_hover(fig=fig)
 
     return fig

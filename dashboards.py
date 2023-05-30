@@ -4,12 +4,12 @@ import streamlit as st
 import psycopg2 as pgsql
 from grid_builder import GridBuilder
 from filters import Filters
+from figures import Bovine_plms, pie_chart_farm, pie_chart_race, battery_30days
 from figures.Bovine_plms import plot_scatter_plm
 import queries.bovine_query as bovn_q
 from data_treatement.data_dealer import *
 from streamlit_extras.metric_cards import style_metric_cards
 from authenticator import login_authenticator
-import new_user_form
 
 # configuração da página
 
@@ -56,7 +56,13 @@ def start_app(user):
         pass
     battery_mean_last24hours = float(run_query(bovn_q.BATTERY_MEAN_LAST_24HOURS)[0][0])
     battery_mean_last48hours = float(run_query(bovn_q.BATTERY_MEAN_LAST_48HOURS)[0][0])
+    bovine_per_farm = pd.DataFrame(run_query(bovn_q.BOVINE_PER_FARM), columns=['Farm_name', 'Qtd'])
+    bovine_per_race = pd.DataFrame(run_query(bovn_q.BOVINE_PER_RACE), columns=['Race_name', 'Qtd'])
+    battery_metrics_30days = pd.DataFrame(run_query(bovn_q.BATTERY_METRICS_30DAYS), columns=['Date', 'Mean', 'Max', 'Min'])
     diff_last_day = round(battery_mean_last24hours - battery_mean_last48hours, 2)
+    farm_chart = pie_chart_farm.farm_chart(data=bovine_per_farm)
+    race_chart = pie_chart_race.race_chart(data=bovine_per_race)
+    battery_chart = battery_30days.line_battery_chart(data=battery_metrics_30days)
 
     colunas = [x[0] for x in columns_name]
     df = pd.DataFrame(content, columns=colunas)
@@ -74,10 +80,17 @@ def start_app(user):
                     border_color='#39275B', border_radius_px=25, border_left_color='#39275B')
     # st.divider()
 
+    with st.expander(label='Visual charts'):
+        c1_expand, c2_expand, c3_expand = st.columns(3)
+        c1_expand.plotly_chart(farm_chart)
+        c2_expand.plotly_chart(race_chart)
+        c3_expand.plotly_chart(battery_chart)
+
     *_, download_btn = st.columns(12, gap='small')
 
     download_database = download_btn.download_button(label='Download data', data=df.to_csv(), file_name='novo_arquivo.csv',
                                                 mime='text/csv')
+    
 
     vw_tab_aggrid = GridBuilder(df, key='filtered_df.df')
     tab_formatada, bovine_data = vw_tab_aggrid.grid_builder()
@@ -129,9 +142,9 @@ def start_app(user):
 
     # Agrupamentos por PLM
     agrupado = filtered_df.df.groupby(by='PLM')
-    bovine_chart = plot_scatter_plm(agrupado, date_period=[inicio, fim])
-
+    bovine_chart = Bovine_plms.plot_scatter_plm(agrupado, date_period=[inicio, fim])
     st.plotly_chart(bovine_chart, use_container_width=True)
+
 
 def initialize_session_state():
     # Inicialize as chaves necessárias no st.session_state
