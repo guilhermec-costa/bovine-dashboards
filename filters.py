@@ -22,6 +22,9 @@ class Filters:
     
     def apply_battery_filter(self, bat_min, bat_max):
         self.df = self.df[(self.df.battery >= bat_min) & (self.df.battery <= bat_max)]
+    
+    def apply_race_filter(self, options):
+        self.df = self.df[self.df['race_name'].isin(options)]
 
 class FilterOptions(Filters):
    def return_filter_opcs(self):

@@ -18,7 +18,7 @@ def start_app(user):
 
     st.set_page_config(layout='wide')
     # st.session_state['authentication_status'] = None
-    *_, add_user, logout = st.columns(12)
+    *_, add_user, logout_position = st.columns(12)
     # if user == 'admin':
     #     with add_user:
     #         new_user = st.button('Register new user')
@@ -27,7 +27,7 @@ def start_app(user):
     #         new_user_form.register_user()
 
 
-    with logout:
+    with logout_position:
         logout = login_authenticator.logout('Logout', 'main')
     st.success(f'Your welcome {user.capitalize()}!')
     st.markdown('###')
@@ -62,21 +62,21 @@ def start_app(user):
     df = pd.DataFrame(content, columns=colunas)
 
     # Função que multiplica por 1000 os valores menores que 100.
-    df['battery'] = df['battery'].apply(lambda x: x * 1000 if x < 100 else x)
+    df['battery'] = df['battery'].apply(lambda x: x / 1000 if x > 100 else x)
 
     metric1, metric2, metric3, *_ = st.columns(4, gap='small')
-    metric1.metric(label='Registred bovines', value=bovine_registers, delta=f'')
-    metric2.metric(label='Medium battery on last 30 days', value=battery_mean_last_month)
-    metric3.metric(label='last 24 hours battery perfomance', value=battery_mean_last24hours, 
+    metric1.metric(label='Active bovines', value=bovine_registers, delta=f'')
+    metric2.metric(label='Medium battery on last 30 days', value=f'{battery_mean_last_month}V')
+    metric3.metric(label='last 24 hours battery perfomance', value=f'{battery_mean_last24hours}V', 
                     delta=diff_last_day,
                     help='last 24 hours battery performance in comparison with the 48 last hours battery perfomance')
     style_metric_cards(background_color='#6D23FF', border_size_px=1.5, 
                     border_color='#39275B', border_radius_px=25, border_left_color='#39275B')
     # st.divider()
 
-    button1, button2, *_ = st.columns(8, gap='small')
+    *_, download_btn = st.columns(12, gap='small')
 
-    download_database = button2.download_button(label='Download data', data=df.to_csv(), file_name='novo_arquivo.csv',
+    download_database = download_btn.download_button(label='Download data', data=df.to_csv(), file_name='novo_arquivo.csv',
                                                 mime='text/csv')
 
     vw_tab_aggrid = GridBuilder(df, key='filtered_df.df')
@@ -102,19 +102,24 @@ def start_app(user):
 
     filtered_df.apply_date_filter(start=inicio, end=fim, refer_column='payloaddatetime')
 
-    c1__farm, c2_plm = st.columns(2)
+    c1__farm, c2_plm, c3_race = st.columns(3)
     farm_filter_opcs = c1__farm.multiselect(label='Choose a farm', options=filtered_df.df['Name'].unique())
     if len(farm_filter_opcs) == 0:
         pass
     else:
         filtered_df.apply_farm_filter(options=farm_filter_opcs)
+    
+    race_filter_options = c3_race.multiselect(label='Choose a race', options=filtered_df.df['race_name'].unique())
+    if len(race_filter_options) >= 1:
+        filtered_df.apply_race_filter(options=race_filter_options)
 
     plm_filter_options = c2_plm.multiselect(label='Choose any PLM', options=filtered_df.df['PLM'].unique())
     if len(plm_filter_options) >= 1: # precisa ser outro if
         filtered_df.apply_plm_filter(options=plm_filter_options)
+    
 
-    min_battery = int(filtered_df.df['battery'].min())
-    max_battery = int(filtered_df.df['battery'].max())
+    min_battery = float(filtered_df.df['battery'].min())
+    max_battery = float(filtered_df.df['battery'].max())
     min_bat, max_bat = st.slider(label='Battery range', value=[min_battery, max_battery], 
                             min_value=min_battery,max_value=max_battery)
 

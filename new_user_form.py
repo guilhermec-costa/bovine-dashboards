@@ -1,6 +1,5 @@
 import streamlit as st
 from authenticator import login_authenticator
-import yaml
 from yaml.loader import SafeLoader
 from authenticator import config
 
