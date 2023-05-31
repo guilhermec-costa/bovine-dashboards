@@ -1,5 +1,5 @@
 QUERY_BOVINE_DASHBOARD = """
-    SELECT * FROM public."bovinedashboards";
+SELECT * FROM public."bovinedashboards";
 """
 
 COLUMNS_TO_DATAFRAME = """
@@ -48,4 +48,9 @@ FROM public."bovinedashboards"
 WHERE EXTRACT(month from payloaddatetime) = EXTRACT(month from current_date)
 GROUP BY payloaddatetime::date
 ORDER BY payloaddatetime::date
+"""
+
+MESSAGES_A_DAY = """
+SELECT "PLM", count("PLM") messages FROM public."bovinedashboards"
+GROUP BY "PLM"; 
 """

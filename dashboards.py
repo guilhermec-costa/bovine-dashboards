@@ -4,12 +4,12 @@ import streamlit as st
 import psycopg2 as pgsql
 from grid_builder import GridBuilder
 from filters import Filters
-from figures import Bovine_plms, pie_chart_farm, pie_chart_race, battery_30days
-from figures.Bovine_plms import plot_scatter_plm
+from figures import Bovine_plms, pie_chart_farm, pie_chart_race, battery_30days, messages_a_day
 import queries.bovine_query as bovn_q
 from data_treatement.data_dealer import *
 from streamlit_extras.metric_cards import style_metric_cards
 from authenticator import login_authenticator
+from streamlit_extras.toggle_switch import st_toggle_switch
 
 # configuração da página
 
@@ -17,15 +17,7 @@ def start_app(user):
     st.session_state.new_user = False
 
     st.set_page_config(layout='wide')
-    # st.session_state['authentication_status'] = None
     *_, add_user, logout_position = st.columns(12)
-    # if user == 'admin':
-    #     with add_user:
-    #         new_user = st.button('Register new user')
-    #     if new_user:
-    #         # show_pages([Page('new_user_form.py'),])+
-    #         new_user_form.register_user()
-
 
     with logout_position:
         logout = login_authenticator.logout('Logout', 'main')
@@ -54,12 +46,15 @@ def start_app(user):
         diff_last_month = round(battery_mean_last_month - battery_mean_last_2month, 2)
     except:
         pass
+
     battery_mean_last24hours = float(run_query(bovn_q.BATTERY_MEAN_LAST_24HOURS)[0][0])
     battery_mean_last48hours = float(run_query(bovn_q.BATTERY_MEAN_LAST_48HOURS)[0][0])
     bovine_per_farm = pd.DataFrame(run_query(bovn_q.BOVINE_PER_FARM), columns=['Farm_name', 'Qtd'])
     bovine_per_race = pd.DataFrame(run_query(bovn_q.BOVINE_PER_RACE), columns=['Race_name', 'Qtd'])
+    # messages_per_day = pd.DataFrame(run_query(bovn_q.MESSAGES_A_DAY), columns=['PLM', 'Messages'])
     battery_metrics_30days = pd.DataFrame(run_query(bovn_q.BATTERY_METRICS_30DAYS), columns=['Date', 'Mean', 'Max', 'Min'])
     diff_last_day = round(battery_mean_last24hours - battery_mean_last48hours, 2)
+    
     farm_chart = pie_chart_farm.farm_chart(data=bovine_per_farm)
     race_chart = pie_chart_race.race_chart(data=bovine_per_race)
     battery_chart = battery_30days.line_battery_chart(data=battery_metrics_30days)
@@ -87,11 +82,9 @@ def start_app(user):
         c3_expand.plotly_chart(battery_chart)
 
     *_, download_btn = st.columns(12, gap='small')
-
     download_database = download_btn.download_button(label='Download data', data=df.to_csv(), file_name='novo_arquivo.csv',
                                                 mime='text/csv')
     
-
     vw_tab_aggrid = GridBuilder(df, key='filtered_df.df')
     tab_formatada, bovine_data = vw_tab_aggrid.grid_builder()
 
@@ -116,10 +109,9 @@ def start_app(user):
     filtered_df.apply_date_filter(start=inicio, end=fim, refer_column='payloaddatetime')
 
     c1__farm, c2_plm, c3_race = st.columns(3)
+    
     farm_filter_opcs = c1__farm.multiselect(label='Choose a farm', options=filtered_df.df['Name'].unique())
-    if len(farm_filter_opcs) == 0:
-        pass
-    else:
+    if len(farm_filter_opcs) >= 1:
         filtered_df.apply_farm_filter(options=farm_filter_opcs)
     
     race_filter_options = c3_race.multiselect(label='Choose a race', options=filtered_df.df['race_name'].unique())
@@ -129,22 +121,28 @@ def start_app(user):
     plm_filter_options = c2_plm.multiselect(label='Choose any PLM', options=filtered_df.df['PLM'].unique())
     if len(plm_filter_options) >= 1: # precisa ser outro if
         filtered_df.apply_plm_filter(options=plm_filter_options)
-    
 
     min_battery = float(filtered_df.df['battery'].min())
     max_battery = float(filtered_df.df['battery'].max())
     min_bat, max_bat = st.slider(label='Battery range', value=[min_battery, max_battery], 
                             min_value=min_battery,max_value=max_battery)
 
-
     # Função que filtra os dispostivos conforme o range de bateria selecionado no slider
     filtered_df.apply_battery_filter(bat_min=min_bat, bat_max=max_bat)
+    messages_per_day = filtered_df.df.groupby(by='PLM').count().reset_index()
+    messages_chart = messages_a_day.messages_a_day(data=messages_per_day)
 
     # Agrupamentos por PLM
     agrupado = filtered_df.df.groupby(by='PLM')
     bovine_chart = Bovine_plms.plot_scatter_plm(agrupado, date_period=[inicio, fim])
-    st.plotly_chart(bovine_chart, use_container_width=True)
 
+    c_switch, days_messages, *_ = st.columns(5)
+    with c_switch:
+        switch = st_toggle_switch(label='Messages per PLM', label_after=True, active_color='#11567f', inactive_color='#D3D3D3')
+    if not switch:
+        st.plotly_chart(bovine_chart, use_container_width=True)
+    else:
+        st.plotly_chart(messages_chart, use_container_width=True)
 
 def initialize_session_state():
     # Inicialize as chaves necessárias no st.session_state
@@ -152,7 +150,6 @@ def initialize_session_state():
         st.session_state['authentication_status'] = None
     if 'name' not in st.session_state:
         st.session_state['name'] = False
-
 
 if __name__ == '__main__':
     initialize_session_state()
