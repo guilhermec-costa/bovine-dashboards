@@ -130,7 +130,8 @@ def start_app(user):
     # Função que filtra os dispostivos conforme o range de bateria selecionado no slider
     filtered_df.apply_battery_filter(bat_min=min_bat, bat_max=max_bat)
     messages_per_day = filtered_df.df.groupby(by='PLM').count().reset_index()
-    messages_chart = messages_a_day.messages_a_day(data=messages_per_day)
+    messages_per_day.rename(columns={'Id':'Sent Messages'}, inplace=True)
+    messages_chart = messages_a_day.messages_a_day(data=messages_per_day, date_period=[inicio, fim])
 
     # Agrupamentos por PLM
     agrupado = filtered_df.df.groupby(by='PLM')
