@@ -6,7 +6,10 @@ class Filters:
         self.df = data_frame
 
     def apply_date_filter(self, start, end, refer_column:str):
-        self.df = self.df[(self.df[refer_column] >= start) & (self.df[refer_column] <= end)]
+        if not end <= start:
+            self.df = self.df[(self.df[refer_column] >= start) & (self.df[refer_column] <= end)]
+        else:
+            st.error('There is no data. The filters were not applied.')
     
     def apply_farm_filter(self, options):
         self.df = self.df[self.df['Name'].isin(options)]

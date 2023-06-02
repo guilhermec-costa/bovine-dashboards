@@ -10,13 +10,16 @@ from data_treatement.data_dealer import *
 from streamlit_extras.metric_cards import style_metric_cards
 from authenticator import login_authenticator
 from streamlit_extras.toggle_switch import st_toggle_switch
+from streamlit_lottie import st_lottie
+import requests
+import lottie_loader
 
-# configuração da página
-
+# # configuração da página
+# with open('style.css') as file:
+#         st.markdown(f'<style>{file.read()}</style>', unsafe_allow_html=True)
+st.set_page_config(layout='wide', page_title='Dashboards SpaceVis')
 def start_app(user):
     st.session_state.new_user = False
-
-    st.set_page_config(layout='wide')
     *_, add_user, logout_position = st.columns(12)
 
     with logout_position:
@@ -51,7 +54,6 @@ def start_app(user):
     battery_mean_last48hours = float(run_query(bovn_q.BATTERY_MEAN_LAST_48HOURS)[0][0])
     bovine_per_farm = pd.DataFrame(run_query(bovn_q.BOVINE_PER_FARM), columns=['Farm_name', 'Qtd'])
     bovine_per_race = pd.DataFrame(run_query(bovn_q.BOVINE_PER_RACE), columns=['Race_name', 'Qtd'])
-    # messages_per_day = pd.DataFrame(run_query(bovn_q.MESSAGES_A_DAY), columns=['PLM', 'Messages'])
     battery_metrics_30days = pd.DataFrame(run_query(bovn_q.BATTERY_METRICS_30DAYS), columns=['Date', 'Mean', 'Max', 'Min'])
     diff_last_day = round(battery_mean_last24hours - battery_mean_last48hours, 2)
     
@@ -152,12 +154,33 @@ def initialize_session_state():
     if 'name' not in st.session_state:
         st.session_state['name'] = False
 
+lottie = lottie_loader.load_lottieurl('https://assets7.lottiefiles.com/packages/lf20_puciaact.json')
+accept = lottie_loader.load_lottieurl('https://assets3.lottiefiles.com/datafiles/uoZvuyyqr04CpMr/data.json')
+cat = lottie_loader.load_lottieurl('https://assets8.lottiefiles.com/temp/lf20_QYm9j9.json')
+    
 if __name__ == '__main__':
     initialize_session_state()
-    name, authentication_status, username = login_authenticator.login(form_name='Login', location='main')
+    menu1, menu2, menu3 = st.columns(3)
+    with open('style.css', 'r') as f:
+        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+    with menu2:
+        name, authentication_status, username = login_authenticator.login(form_name='Login', location='main')
     if authentication_status:
         start_app(user=username)
     elif authentication_status is None:
-        pass
+        with menu2:
+            st_lottie(lottie, loop=True, quality='high', width=650, height=500)
+            pass
     else:
-        st.error('Be sure your credentials are correct')
+        with menu2:
+            st.error('Be sure your credentials are correct')
+
+    
+hide_st_style = """
+<style>
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+</style>
+                """
+st.markdown(hide_st_style, unsafe_allow_html=True)

@@ -1,22 +1,67 @@
-/* div.css-j5r0tf.e1tzin5v2 {
-    background-color: blueviolet;
+.css-k47kvt {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 400;
+    padding: 0.5rem 1rem; /* Aumenta o espaçamento interno do botão */
+    border-radius: 0.5rem; /* Aumenta o raio do arredondamento das bordas */
+    margin: 0;
+    line-height: 1.6;
+    color: white; /* Define a cor do texto para branco */
+    width: auto;
+    user-select: none;
+    background-color: rgb(19, 23, 32);
+    border: 1px solid rgba(250, 250, 250, 0.2);
+    text-decoration: none; /* Remove a decoração de sublinhado */
+    transition: background-color 0.3s ease; /* Adiciona uma transição suave ao alterar a cor de fundo */
+  }
+  
+  .css-k47kvt:hover {
+    background-color: lightblue; /* Define uma cor de fundo diferente ao passar o mouse */
+  }
+  
+  .css-k47kvt:focus {
+    outline: none; /* Remove a borda de foco padrão */
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3); /* Adiciona uma sombra ao receber foco */
+  }
+
+button.css-k47kvt.edgvbvh5{
+    color:black
+}
+
+div.css-1p05t8e.epcbefy1 {
+    border: 1px solid rgba(250, 250, 250, 0.2);
+    border-radius: 0.25rem;
+    padding: calc(1em - 1px);
+    background: linear-gradient(90deg, rgba(93,155,167,0.6054796918767507) 0%, rgba(1,38,84,1) 53%);
+    color: black;
+    width: 600px;
+    align-items: center;
+    justify-content: left;
+    position: inherit;
+    border-color: gainsboro;
+    border-width: 1px;
+    font-family: Arial, sans-serif; /* Define uma família de fontes */
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3); /* Adiciona uma sombra */
+    margin: 0 auto; /* Centraliza horizontalmente */
+    text-align: left; /* Centraliza o conteúdo de texto */
+  }
+
+/* .css-yx3tsu p {
+    word-break: break-word;
+    font-size: 14px;
+    color: black;
 } */
 
-label.css-1c8hduo.e16fv1kl2 {
-    font-size: 35px;
+button.css-k47kvt.edgvbvh5 {
+    background-color: lightblue;
 }
 
+/* label.css-k3w14i.effi0qh3{
+    color:black
+} */
 
-div.css-1wivap2.e16fv1kl3 {
-    color: white;
+span.css-10trblm.e16nr0p30{
+    color: whitesmoke;
 }
 
-div.css-1xarl3l.e16fv1kl1 {
-    font-size: 60px;
-}
-
-button.css-w8lneb.edgvbvh11 {
-    background-color: #6D23FF;
-    border-color: yellow;
-    font-weight: bold;
-}
