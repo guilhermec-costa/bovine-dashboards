@@ -26,27 +26,26 @@ def run_query(query):
     with conn.cursor() as cursor:
         cursor.execute(query)
         return cursor.fetchall()
-    
+
 def run_queries():
     global content, bovine_per_farm, bovine_per_race, battery_mean_last24hours, battery_mean_last48hours, battery_metrics_30days, \
     columns_name, bovine_registers, battery_mean_last24hours, battery_mean_last_month, diff_last_day
-    with st.spinner('Re-running queries'):
-        content = run_query(bovn_q.QUERY_BOVINE_DASHBOARD)
-        columns_name = run_query(bovn_q.COLUMNS_TO_DATAFRAME)
-        bovine_registers = run_query(bovn_q.BOVINE_NUMBER)[0][0]
-        battery_mean_last_month = float(run_query(bovn_q.BATTERY_MEAN_LAST_30DAYS)[0][0])
-        try:
-            battery_mean_last_2month = float(run_query(bovn_q.BATTERY_MEAN_LAST_60DAYS)[0][0])
-            diff_last_month = round(battery_mean_last_month - battery_mean_last_2month, 2)
-        except:
-            pass
+    content = run_query(bovn_q.QUERY_BOVINE_DASHBOARD)
+    columns_name = run_query(bovn_q.COLUMNS_TO_DATAFRAME)
+    bovine_registers = run_query(bovn_q.BOVINE_NUMBER)[0][0]
+    battery_mean_last_month = float(run_query(bovn_q.BATTERY_MEAN_LAST_30DAYS)[0][0])
+    try:
+        battery_mean_last_2month = float(run_query(bovn_q.BATTERY_MEAN_LAST_60DAYS)[0][0])
+        diff_last_month = round(battery_mean_last_month - battery_mean_last_2month, 2)
+    except:
+        pass
 
-        battery_mean_last24hours = float(run_query(bovn_q.BATTERY_MEAN_LAST_24HOURS)[0][0])
-        battery_mean_last48hours = float(run_query(bovn_q.BATTERY_MEAN_LAST_48HOURS)[0][0])
-        bovine_per_farm = pd.DataFrame(run_query(bovn_q.BOVINE_PER_FARM), columns=['Farm_name', 'Qtd'])
-        bovine_per_race = pd.DataFrame(run_query(bovn_q.BOVINE_PER_RACE), columns=['Race_name', 'Qtd'])
-        battery_metrics_30days = pd.DataFrame(run_query(bovn_q.BATTERY_METRICS_30DAYS), columns=['Date', 'Mean', 'Max', 'Min'])
-        diff_last_day = round(battery_mean_last24hours - battery_mean_last48hours, 2)
+    battery_mean_last24hours = float(run_query(bovn_q.BATTERY_MEAN_LAST_24HOURS)[0][0])
+    battery_mean_last48hours = float(run_query(bovn_q.BATTERY_MEAN_LAST_48HOURS)[0][0])
+    bovine_per_farm = pd.DataFrame(run_query(bovn_q.BOVINE_PER_FARM), columns=['Farm_name', 'Qtd'])
+    bovine_per_race = pd.DataFrame(run_query(bovn_q.BOVINE_PER_RACE), columns=['Race_name', 'Qtd'])
+    battery_metrics_30days = pd.DataFrame(run_query(bovn_q.BATTERY_METRICS_30DAYS), columns=['Date', 'Mean', 'Max', 'Min'])
+    diff_last_day = round(battery_mean_last24hours - battery_mean_last48hours, 2)
     
 def start_app(user):
     st.session_state.new_user = False
@@ -177,7 +176,7 @@ if __name__ == '__main__':
         start_app(user=username)
     elif authentication_status is None:
         with menu2:
-            st_lottie(lottie, loop=True, quality='high', width=650, height=500)
+            st_lottie(lottie, loop=True, quality='high', width=600, height=500)
             pass
     else:
         with menu2:
