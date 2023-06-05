@@ -14,9 +14,6 @@ from streamlit_lottie import st_lottie
 import requests
 import lottie_loader
 
-# # configuração da página
-# with open('style.css') as file:
-#         st.markdown(f'<style>{file.read()}</style>', unsafe_allow_html=True)
 st.set_page_config(layout='wide', page_title='Dashboards SpaceVis')
 
 @st.cache_resource
@@ -32,33 +29,35 @@ def run_query(query):
     
 def run_queries():
     global content, bovine_per_farm, bovine_per_race, battery_mean_last24hours, battery_mean_last48hours, battery_metrics_30days, \
-    columns_name, bovine_registers, battery_mean_last24hours, battery_mean_last_month
-    content = run_query(bovn_q.QUERY_BOVINE_DASHBOARD)
-    columns_name = run_query(bovn_q.COLUMNS_TO_DATAFRAME)
-    bovine_registers = run_query(bovn_q.BOVINE_NUMBER)[0][0]
-    battery_mean_last_month = float(run_query(bovn_q.BATTERY_MEAN_LAST_30DAYS)[0][0])
-    try:
-        battery_mean_last_2month = float(run_query(bovn_q.BATTERY_MEAN_LAST_60DAYS)[0][0])
-        diff_last_month = round(battery_mean_last_month - battery_mean_last_2month, 2)
-    except:
-        pass
+    columns_name, bovine_registers, battery_mean_last24hours, battery_mean_last_month, diff_last_day
+    with st.spinner('Re-running queries'):
+        content = run_query(bovn_q.QUERY_BOVINE_DASHBOARD)
+        columns_name = run_query(bovn_q.COLUMNS_TO_DATAFRAME)
+        bovine_registers = run_query(bovn_q.BOVINE_NUMBER)[0][0]
+        battery_mean_last_month = float(run_query(bovn_q.BATTERY_MEAN_LAST_30DAYS)[0][0])
+        try:
+            battery_mean_last_2month = float(run_query(bovn_q.BATTERY_MEAN_LAST_60DAYS)[0][0])
+            diff_last_month = round(battery_mean_last_month - battery_mean_last_2month, 2)
+        except:
+            pass
 
-    battery_mean_last24hours = float(run_query(bovn_q.BATTERY_MEAN_LAST_24HOURS)[0][0])
-    battery_mean_last48hours = float(run_query(bovn_q.BATTERY_MEAN_LAST_48HOURS)[0][0])
-    bovine_per_farm = pd.DataFrame(run_query(bovn_q.BOVINE_PER_FARM), columns=['Farm_name', 'Qtd'])
-    bovine_per_race = pd.DataFrame(run_query(bovn_q.BOVINE_PER_RACE), columns=['Race_name', 'Qtd'])
-    battery_metrics_30days = pd.DataFrame(run_query(bovn_q.BATTERY_METRICS_30DAYS), columns=['Date', 'Mean', 'Max', 'Min'])
+        battery_mean_last24hours = float(run_query(bovn_q.BATTERY_MEAN_LAST_24HOURS)[0][0])
+        battery_mean_last48hours = float(run_query(bovn_q.BATTERY_MEAN_LAST_48HOURS)[0][0])
+        bovine_per_farm = pd.DataFrame(run_query(bovn_q.BOVINE_PER_FARM), columns=['Farm_name', 'Qtd'])
+        bovine_per_race = pd.DataFrame(run_query(bovn_q.BOVINE_PER_RACE), columns=['Race_name', 'Qtd'])
+        battery_metrics_30days = pd.DataFrame(run_query(bovn_q.BATTERY_METRICS_30DAYS), columns=['Date', 'Mean', 'Max', 'Min'])
+        diff_last_day = round(battery_mean_last24hours - battery_mean_last48hours, 2)
     
 def start_app(user):
     st.session_state.new_user = False
-    *_, add_user, logout_position = st.columns(12)
+    st.session_state.logout = False
+    *_, logout_position = st.columns(12)
 
     with logout_position:
         logout = login_authenticator.logout('Logout', 'main')
+        st.session_state.logout = True
     st.success(f'Your welcome {user.capitalize()}!')
     st.markdown('###')
-        
-    diff_last_day = round(battery_mean_last24hours - battery_mean_last48hours, 2)
     
     farm_chart = pie_chart_farm.farm_chart(data=bovine_per_farm)
     race_chart = pie_chart_race.race_chart(data=bovine_per_race)
@@ -86,11 +85,12 @@ def start_app(user):
         c3_expand.plotly_chart(battery_chart)
 
     *_, queries_btn, download_btn = st.columns(12, gap='small')
-    rerun_queries = queries_btn.button(label='Rerun Queries', key='rerun queries', type='secondary')
+    rerun_queries = queries_btn.button(label='Rerun Queries', key='rerun queries', type='secondary', disabled=False)
     if rerun_queries:
-        run_queries()
+        st.experimental_rerun()
+
     download_database = download_btn.download_button(label='Download data', data=df.to_csv(), file_name='novo_arquivo.csv',
-                                                mime='text/csv')
+                                                mime='text/csv', key='download_btn')
     
     vw_tab_aggrid = GridBuilder(df, key='filtered_df.df')
     tab_formatada, bovine_data = vw_tab_aggrid.grid_builder()
