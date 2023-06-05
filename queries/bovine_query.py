@@ -13,7 +13,7 @@ SELECT count(*) FROM public."Eartags"
 """
 
 BATTERY_MEAN_LAST_30DAYS = """
-SELECT round(avg(battery)::numeric, 2) FROM public."bovinedashboards" bov
+SELECT round(avg(battery)::numeric, 3) FROM public."bovinedashboards" bov
 WHERE payloaddatetime BETWEEN (current_date - interval '1' month) AND current_date
 """
 
@@ -23,12 +23,12 @@ WHERE payloaddatetime BETWEEN (current_date - interval '2' month) AND (current_d
 """
 
 BATTERY_MEAN_LAST_24HOURS = """
-SELECT round(avg(battery::numeric), 2) FROM public."bovinedashboards" bov
+SELECT round(avg(battery::numeric), 3) FROM public."bovinedashboards" bov
 WHERE payloaddatetime BETWEEN (current_date - interval '1' day) AND current_date
 """
 
 BATTERY_MEAN_LAST_48HOURS = """
-SELECT round(avg(battery::numeric), 2) FROM public."bovinedashboards" bov
+SELECT round(avg(battery::numeric), 3) FROM public."bovinedashboards" bov
 WHERE payloaddatetime BETWEEN (current_date - interval '2' day) AND (current_date - interval '1' day)
 """
 

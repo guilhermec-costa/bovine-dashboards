@@ -11,8 +11,8 @@ from streamlit_extras.metric_cards import style_metric_cards
 from authenticator import login_authenticator
 from streamlit_extras.toggle_switch import st_toggle_switch
 from streamlit_lottie import st_lottie
-import requests
 import lottie_loader
+import json
 
 st.set_page_config(layout='wide', page_title='Dashboards SpaceVis')
 
@@ -46,6 +46,13 @@ def run_queries():
     bovine_per_race = pd.DataFrame(run_query(bovn_q.BOVINE_PER_RACE), columns=['Race_name', 'Qtd'])
     battery_metrics_30days = pd.DataFrame(run_query(bovn_q.BATTERY_METRICS_30DAYS), columns=['Date', 'Mean', 'Max', 'Min'])
     diff_last_day = round(battery_mean_last24hours - battery_mean_last48hours, 2)
+
+def initialize_session_state():
+    # Inicialize as chaves necessárias no st.session_state
+    if 'authentication_status' not in st.session_state:
+        st.session_state['authentication_status'] = None
+    if 'name' not in st.session_state:
+        st.session_state['name'] = False
     
 def start_app(user):
     st.session_state.new_user = False
@@ -152,16 +159,13 @@ def start_app(user):
     else:
         st.plotly_chart(messages_chart, use_container_width=True)
 
-def initialize_session_state():
-    # Inicialize as chaves necessárias no st.session_state
-    if 'authentication_status' not in st.session_state:
-        st.session_state['authentication_status'] = None
-    if 'name' not in st.session_state:
-        st.session_state['name'] = False
 
 lottie = lottie_loader.load_lottieurl('https://assets7.lottiefiles.com/packages/lf20_puciaact.json')
 accept = lottie_loader.load_lottieurl('https://assets3.lottiefiles.com/datafiles/uoZvuyyqr04CpMr/data.json')
 cat = lottie_loader.load_lottieurl('https://assets8.lottiefiles.com/temp/lf20_QYm9j9.json')
+def load_lottiefile(path):
+    with open(path, 'r') as f:
+        return json.load(f)
 
 conn = start_connection()
 
@@ -176,8 +180,9 @@ if __name__ == '__main__':
     if authentication_status:
         start_app(user=username)
     elif authentication_status is None:
-        with menu2:
-            st_lottie(lottie, loop=True, quality='high', width=600, height=500)
+        with menu1:
+            welcome = load_lottiefile('sO6kXQ0Clz.json')
+            st_lottie(welcome, loop=True, quality='high', width=1200, height=350, speed=1.8)
             pass
     else:
         with menu2:
