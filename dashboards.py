@@ -86,6 +86,7 @@ def start_app(user):
     *_, queries_btn, download_btn = st.columns(12, gap='small')
     rerun_queries = queries_btn.button(label='Rerun Queries', key='rerun queries', type='secondary', disabled=False)
     if rerun_queries:
+        run_queries()
         st.experimental_rerun()
 
     download_database = download_btn.download_button(label='Download data', data=df.to_csv(), file_name='novo_arquivo.csv',
@@ -143,7 +144,7 @@ def start_app(user):
     agrupado = filtered_df.df.groupby(by='PLM')
     bovine_chart = Bovine_plms.plot_scatter_plm(agrupado, date_period=[inicio, fim])
 
-    c_switch, days_messages, *_ = st.columns(5)
+    c_switch, *_ = st.columns(5)
     with c_switch:
         switch = st_toggle_switch(label='Messages per PLM', label_after=True, active_color='#11567f', inactive_color='#D3D3D3')
     if not switch:
