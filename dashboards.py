@@ -163,9 +163,10 @@ def start_app(user):
 lottie = lottie_loader.load_lottieurl('https://assets7.lottiefiles.com/packages/lf20_puciaact.json')
 accept = lottie_loader.load_lottieurl('https://assets3.lottiefiles.com/datafiles/uoZvuyyqr04CpMr/data.json')
 cat = lottie_loader.load_lottieurl('https://assets8.lottiefiles.com/temp/lf20_QYm9j9.json')
-def load_lottiefile(path):
-    with open(path, 'r') as f:
-        return json.load(f)
+welcome = lottie_loader.load_lottieurl('https://assets7.lottiefiles.com/packages/lf20_xnbikipz.json')
+# def load_lottiefile(path):
+#     with open(path, 'r') as f:
+#         return json.load(f)
 
 conn = start_connection()
 
@@ -181,8 +182,8 @@ if __name__ == '__main__':
         start_app(user=username)
     elif authentication_status is None:
         with menu1:
-            welcome = load_lottiefile(r'C:\Users\guilherme.costa\Desktop\Thiago\sO6kXQ0Clz.json')
-            st_lottie(welcome, loop=True, quality='high', width=1200, height=350, speed=1.8)
+            # welcome = load_lottiefile(r'C:\Users\guilherme.costa\Desktop\Thiago\sO6kXQ0Clz.json')
+            st_lottie(welcome, loop=True, quality='high', width=600, height=500, speed=1.8)
             pass
     else:
         with menu2:
