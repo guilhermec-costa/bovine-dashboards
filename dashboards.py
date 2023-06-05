@@ -18,28 +18,21 @@ import lottie_loader
 # with open('style.css') as file:
 #         st.markdown(f'<style>{file.read()}</style>', unsafe_allow_html=True)
 st.set_page_config(layout='wide', page_title='Dashboards SpaceVis')
-def start_app(user):
-    st.session_state.new_user = False
-    *_, add_user, logout_position = st.columns(12)
 
-    with logout_position:
-        logout = login_authenticator.logout('Logout', 'main')
-    st.success(f'Your welcome {user.capitalize()}!')
-    st.markdown('###')
+@st.cache_resource
+def start_connection():
+    return pgsql.connect(**st.secrets['postgres'])
 
-    @st.cache_resource
-    def start_connection():
-        return pgsql.connect(**st.secrets['postgres'])
-
-    # Iniciando query
-    @st.cache_data(ttl=600)
-    def run_query(query):
-        with conn.cursor() as cursor:
-            cursor.execute(query)
-            return cursor.fetchall()    
-
-    conn = start_connection()
-        
+# Iniciando query
+@st.cache_data(ttl=600)
+def run_query(query):
+    with conn.cursor() as cursor:
+        cursor.execute(query)
+        return cursor.fetchall()
+    
+def run_queries():
+    global content, bovine_per_farm, bovine_per_race, battery_mean_last24hours, battery_mean_last48hours, battery_metrics_30days, \
+    columns_name, bovine_registers, battery_mean_last24hours, battery_mean_last_month
     content = run_query(bovn_q.QUERY_BOVINE_DASHBOARD)
     columns_name = run_query(bovn_q.COLUMNS_TO_DATAFRAME)
     bovine_registers = run_query(bovn_q.BOVINE_NUMBER)[0][0]
@@ -55,6 +48,16 @@ def start_app(user):
     bovine_per_farm = pd.DataFrame(run_query(bovn_q.BOVINE_PER_FARM), columns=['Farm_name', 'Qtd'])
     bovine_per_race = pd.DataFrame(run_query(bovn_q.BOVINE_PER_RACE), columns=['Race_name', 'Qtd'])
     battery_metrics_30days = pd.DataFrame(run_query(bovn_q.BATTERY_METRICS_30DAYS), columns=['Date', 'Mean', 'Max', 'Min'])
+    
+def start_app(user):
+    st.session_state.new_user = False
+    *_, add_user, logout_position = st.columns(12)
+
+    with logout_position:
+        logout = login_authenticator.logout('Logout', 'main')
+    st.success(f'Your welcome {user.capitalize()}!')
+    st.markdown('###')
+        
     diff_last_day = round(battery_mean_last24hours - battery_mean_last48hours, 2)
     
     farm_chart = pie_chart_farm.farm_chart(data=bovine_per_farm)
@@ -75,7 +78,6 @@ def start_app(user):
                     help='last 24 hours battery performance in comparison with the 48 last hours battery perfomance')
     style_metric_cards(background_color='#6D23FF', border_size_px=1.5, 
                     border_color='#39275B', border_radius_px=25, border_left_color='#39275B')
-    # st.divider()
 
     with st.expander(label='Visual charts'):
         c1_expand, c2_expand, c3_expand = st.columns(3)
@@ -83,7 +85,10 @@ def start_app(user):
         c2_expand.plotly_chart(race_chart)
         c3_expand.plotly_chart(battery_chart)
 
-    *_, download_btn = st.columns(12, gap='small')
+    *_, queries_btn, download_btn = st.columns(12, gap='small')
+    rerun_queries = queries_btn.button(label='Rerun Queries', key='rerun queries', type='secondary')
+    if rerun_queries:
+        run_queries()
     download_database = download_btn.download_button(label='Download data', data=df.to_csv(), file_name='novo_arquivo.csv',
                                                 mime='text/csv')
     
@@ -157,9 +162,12 @@ def initialize_session_state():
 lottie = lottie_loader.load_lottieurl('https://assets7.lottiefiles.com/packages/lf20_puciaact.json')
 accept = lottie_loader.load_lottieurl('https://assets3.lottiefiles.com/datafiles/uoZvuyyqr04CpMr/data.json')
 cat = lottie_loader.load_lottieurl('https://assets8.lottiefiles.com/temp/lf20_QYm9j9.json')
-    
+
+conn = start_connection()
+
 if __name__ == '__main__':
     initialize_session_state()
+    run_queries()
     menu1, menu2, menu3 = st.columns(3)
     with open('style.css', 'r') as f:
         st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
@@ -182,5 +190,5 @@ hide_st_style = """
 footer {visibility: hidden;}
 header {visibility: hidden;}
 </style>
-                """
+"""
 st.markdown(hide_st_style, unsafe_allow_html=True)
