@@ -181,7 +181,7 @@ if __name__ == '__main__':
         start_app(user=username)
     elif authentication_status is None:
         with menu1:
-            welcome = load_lottiefile('sO6kXQ0Clz.json')
+            welcome = load_lottiefile('C:\Users\guilherme.costa\Desktop\Thiago\sO6kXQ0Clz.json')
             st_lottie(welcome, loop=True, quality='high', width=1200, height=350, speed=1.8)
             pass
     else:
