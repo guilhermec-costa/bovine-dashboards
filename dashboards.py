@@ -190,7 +190,7 @@ def start_app(user):
         mensagens_filtrado = Filters(data_frame=messages_per_day)
         mensagens_filtrado.apply_message_filter(min_qtd=min_messages, max_qtd=max_messages)
         messages_chart = messages_a_day.messages_a_day(data=mensagens_filtrado.df, date_period=[inicio, fim])
-        last_bat = last_battery_chart.last_battery(data=concatenado)
+        last_bat = last_battery_chart_fig.last_battery(data=concatenado)
         st.plotly_chart(messages_chart, use_container_width=True)
         st.plotly_chart(last_bat, use_container_width=True)
 
