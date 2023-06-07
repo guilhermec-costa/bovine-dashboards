@@ -4,7 +4,7 @@ import streamlit as st
 import psycopg2 as pgsql
 from grid_builder import GridBuilder
 from filters import Filters
-from figures import Bovine_plms, pie_chart_farm, pie_chart_race, battery_30days, messages_a_day, last_battery_chart, battery_categories
+from figures import Bovine_plms, pie_chart_farm, pie_chart_race, battery_30days, messages_a_day, last_battery_chart_fig, battery_categories
 import queries.bovine_query as bovn_q
 from data_treatement.data_dealer import *
 from streamlit_extras.metric_cards import style_metric_cards
