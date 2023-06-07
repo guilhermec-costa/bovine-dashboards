@@ -54,3 +54,40 @@ MESSAGES_A_DAY = """
 SELECT "PLM", count("PLM") messages FROM public."bovinedashboards"
 GROUP BY "PLM"; 
 """
+
+LAST_BATTERY_QUERY = """
+SELECT bv_dash1."PLM", bv_dash1.payloaddatetime, round(bv_dash2.battery::numeric, 2)
+FROM "eartag-ioda-prod".public.bovinedashboards bv_dash1
+JOIN (
+	SELECT bv_dash2."PLM", bv_dash2.payloaddatetime, bv_dash2.battery
+	FROM "eartag-ioda-prod".public.bovinedashboards bv_dash2
+) bv_dash2 ON bv_dash1."PLM" = bv_dash2."PLM" AND bv_dash1.payloaddatetime = bv_dash2.payloaddatetime
+WHERE bv_dash1.payloaddatetime = (
+	SELECT max(payloaddatetime)
+	FROM "eartag-ioda-prod".public.bovinedashboards
+	WHERE "PLM" = bv_dash1."PLM"
+)
+ORDER BY bv_dash1.payloaddatetime DESC;
+"""
+
+BATTERY_CATEGORIES = """
+SELECT battery_indice, count(battery_indice) FROM (
+SELECT bv_dash1."PLM", bv_dash1.payloaddatetime, round(bv_dash2.battery::numeric, 2) last_battery,
+CASE
+	WHEN bv_dash2.battery < 3.6 THEN 'Less than 3.6V'
+	WHEN bv_dash2.battery <= 3.8 THEN 'Between 3.6V and 3.8V'
+	ELSE 'Greater than 3.8V'
+END battery_indice
+FROM "eartag-ioda-prod".public.bovinedashboards bv_dash1
+JOIN (
+	SELECT bv_dash2."PLM", bv_dash2.payloaddatetime, bv_dash2.battery
+	FROM "eartag-ioda-prod".public.bovinedashboards bv_dash2
+) bv_dash2 ON bv_dash1."PLM" = bv_dash2."PLM" AND bv_dash1.payloaddatetime = bv_dash2.payloaddatetime
+WHERE bv_dash1.payloaddatetime = (
+	SELECT max(payloaddatetime)
+	FROM "eartag-ioda-prod".public.bovinedashboards
+	WHERE "PLM" = bv_dash1."PLM"
+)
+ORDER BY bv_dash1.payloaddatetime DESC) geral
+GROUP BY battery_indice;
+"""

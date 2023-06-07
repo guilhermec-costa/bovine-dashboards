@@ -6,10 +6,13 @@ class Filters:
         self.df = data_frame
 
     def apply_date_filter(self, start, end, refer_column:str):
-        if not end <= start:
-            self.df = self.df[(self.df[refer_column] >= start) & (self.df[refer_column] <= end)]
-        else:
-            st.error('There is no data. The filters were not applied.')
+        try:
+            if not end <= start:
+                self.df = self.df[(self.df[refer_column] >= start) & (self.df[refer_column] <= end)]
+            else:
+                st.error('There is no data. The filters were not applied.')
+        except:
+            st.error('There is data. The filters were not applied.')
     
     def apply_farm_filter(self, options):
         self.df = self.df[self.df['Name'].isin(options)]
@@ -28,6 +31,9 @@ class Filters:
     
     def apply_race_filter(self, options):
         self.df = self.df[self.df['race_name'].isin(options)]
+
+    def apply_message_filter(self, min_qtd, max_qtd):
+        self.df = self.df[(self.df['Sent Messages'] >= min_qtd) & (self.df['Sent Messages'] <= max_qtd)]
 
 class FilterOptions(Filters):
    def return_filter_opcs(self):

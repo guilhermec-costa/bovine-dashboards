@@ -4,7 +4,7 @@ import streamlit as st
 import psycopg2 as pgsql
 from grid_builder import GridBuilder
 from filters import Filters
-from figures import Bovine_plms, pie_chart_farm, pie_chart_race, battery_30days, messages_a_day
+from figures import Bovine_plms, pie_chart_farm, pie_chart_race, battery_30days, messages_a_day, last_battery_chart, battery_categories
 import queries.bovine_query as bovn_q
 from data_treatement.data_dealer import *
 from streamlit_extras.metric_cards import style_metric_cards
@@ -12,7 +12,6 @@ from authenticator import login_authenticator
 from streamlit_extras.toggle_switch import st_toggle_switch
 from streamlit_lottie import st_lottie
 import lottie_loader
-import json
 
 st.set_page_config(layout='wide', page_title='Dashboards SpaceVis')
 
@@ -29,7 +28,7 @@ def run_query(query):
 
 def run_queries():
     global content, bovine_per_farm, bovine_per_race, battery_mean_last24hours, battery_mean_last48hours, battery_metrics_30days, \
-    columns_name, bovine_registers, battery_mean_last24hours, battery_mean_last_month, diff_last_day
+    columns_name, bovine_registers, battery_mean_last24hours, battery_mean_last_month, diff_last_day, last_battery_data, volts_categories
     content = run_query(bovn_q.QUERY_BOVINE_DASHBOARD)
     columns_name = run_query(bovn_q.COLUMNS_TO_DATAFRAME)
     bovine_registers = run_query(bovn_q.BOVINE_NUMBER)[0][0]
@@ -44,8 +43,10 @@ def run_queries():
     battery_mean_last48hours = float(run_query(bovn_q.BATTERY_MEAN_LAST_48HOURS)[0][0])
     bovine_per_farm = pd.DataFrame(run_query(bovn_q.BOVINE_PER_FARM), columns=['Farm_name', 'Qtd'])
     bovine_per_race = pd.DataFrame(run_query(bovn_q.BOVINE_PER_RACE), columns=['Race_name', 'Qtd'])
+    last_battery_data = pd.DataFrame(run_query(bovn_q.LAST_BATTERY_QUERY), columns=['PLM', 'payloaddatetime', 'battery'])
     battery_metrics_30days = pd.DataFrame(run_query(bovn_q.BATTERY_METRICS_30DAYS), columns=['Date', 'Mean', 'Max', 'Min'])
     diff_last_day = round(battery_mean_last24hours - battery_mean_last48hours, 2)
+    volts_categories = pd.DataFrame(run_query(bovn_q.BATTERY_CATEGORIES), columns=['Category', 'Quantity'])
 
 def initialize_session_state():
     # Inicialize as chaves necessárias no st.session_state
@@ -67,6 +68,7 @@ def start_app(user):
     
     farm_chart = pie_chart_farm.farm_chart(data=bovine_per_farm)
     race_chart = pie_chart_race.race_chart(data=bovine_per_race)
+    volt_ranges = battery_categories.battery_categories(data=volts_categories)
     battery_chart = battery_30days.line_battery_chart(data=battery_metrics_30days)
 
     colunas = [x[0] for x in columns_name]
@@ -84,17 +86,16 @@ def start_app(user):
     style_metric_cards(background_color='#6D23FF', border_size_px=1.5, 
                     border_color='#39275B', border_radius_px=25, border_left_color='#39275B')
 
-    with st.expander(label='Visual charts'):
+    with st.expander(label='Battery perfomance last 30 days'):
+        st.plotly_chart(battery_chart, use_container_width=True)
+
+    with st.expander(label='General metrics'):
         c1_expand, c2_expand, c3_expand = st.columns(3)
-        c1_expand.plotly_chart(farm_chart)
-        c2_expand.plotly_chart(race_chart)
-        c3_expand.plotly_chart(battery_chart)
+        c1_expand.plotly_chart(farm_chart, use_container_width=True)
+        c2_expand.plotly_chart(race_chart, use_container_width=True)
+        c3_expand.plotly_chart(volt_ranges, use_container_width=True)
 
     *_, queries_btn, download_btn = st.columns(12, gap='small')
-    rerun_queries = queries_btn.button(label='Rerun Queries', key='rerun queries', type='secondary', disabled=False)
-    if rerun_queries:
-        run_queries()
-        st.experimental_rerun()
 
     download_database = download_btn.download_button(label='Download data', data=df.to_csv(), file_name='novo_arquivo.csv',
                                                 mime='text/csv', key='download_btn')
@@ -113,8 +114,8 @@ def start_app(user):
 
     # filtro de datas
     inicio = c1.date_input(label='Start date:', max_value=datetime.now(),
-                            key='data_inicio', value=filtered_df.df['CreatedAt'].min() + timedelta(days=-1))
-    fim = c2.date_input(label='End date:', min_value=filtered_df.df['CreatedAt'].min(), 
+                            key='data_inicio', value=datetime.now() + timedelta(days=-1))
+    fim = c2.date_input(label='End date:', min_value=filtered_df.df['CreatedAt'].min(), max_value=filtered_df.df['payloaddatetime'].max() + timedelta(days=1),
                         key='data_fim', value=datetime.now() + timedelta(days=1))
 
     inicio = pd.to_datetime(inicio, utc=True)
@@ -145,28 +146,59 @@ def start_app(user):
     filtered_df.apply_battery_filter(bat_min=min_bat, bat_max=max_bat)
     messages_per_day = filtered_df.df.groupby(by='PLM').count().reset_index()
     messages_per_day.rename(columns={'Id':'Sent Messages'}, inplace=True)
-    messages_chart = messages_a_day.messages_a_day(data=messages_per_day, date_period=[inicio, fim])
+    # messages_chart = messages_a_day.messages_a_day(data=messages_per_day, date_period=[inicio, fim])
 
     # Agrupamentos por PLM
     agrupado = filtered_df.df.groupby(by='PLM')
     bovine_chart = Bovine_plms.plot_scatter_plm(agrupado, date_period=[inicio, fim])
+    agrupado_bateria = filtered_df.df.groupby(by='PLM').max()
+    agrupado_bateria.reset_index(inplace=True)
+    concatenado = filtered_df.df[(filtered_df.df['PLM'].isin(agrupado_bateria['PLM'])) & (filtered_df.df['payloaddatetime'].isin(agrupado_bateria['payloaddatetime']))]
 
-    c_switch, *_ = st.columns(5)
+    c_switch, order_switch_ascending, order_switch_descending, *_ = st.columns(6, gap='small')
     with c_switch:
-        switch = st_toggle_switch(label='Messages per PLM', label_after=True, active_color='#11567f', inactive_color='#D3D3D3')
+        switch = st_toggle_switch(label='See uplink and last battery figures', label_after=True, active_color='#F98800', inactive_color='#D3D3D3', track_color='#5E00F8')
     if not switch:
         st.plotly_chart(bovine_chart, use_container_width=True)
     else:
+        with order_switch_ascending:
+            switch_ascending = st_toggle_switch(label='Order data ascending', label_after=True, active_color='#F98800', inactive_color='#D3D3D3',
+                                                track_color='#5E00F8')
+        with order_switch_descending:
+            switch_descending = st_toggle_switch(label='Order data descending', label_after=True, active_color='#F98800', inactive_color='#D3D3D3',
+                                                 track_color='#5E00F8')
+        if not switch_descending and switch_ascending:
+            messages_per_day.sort_values(by='Sent Messages', ascending=True, inplace=True)
+            concatenado.sort_values('battery', ascending=True, inplace=True)
+        elif not switch_ascending and switch_descending:
+            messages_per_day.sort_values(by='Sent Messages', ascending=False, inplace=True)
+            concatenado.sort_values('battery', ascending=False, inplace=True)
+        elif switch_ascending and switch_descending:
+            st.warning('Ordered by PLM number. Use only one switch')
+            messages_per_day.sort_values(by='PLM', ascending=True, inplace=True)
+            concatenado.sort_values(by='PLM', ascending=True, inplace=True)
+        else:
+            messages_per_day.sort_values(by='PLM', ascending=True, inplace=True)
+            concatenado.sort_values(by='PLM', ascending=True, inplace=True)
+
+        min_messages = int(messages_per_day['Sent Messages'].min())
+        max_messages = int(messages_per_day['Sent Messages'].max())
+        
+        min_messages, max_messages = c_switch.slider(label='Messages Range', value=[min_messages, max_messages], 
+                            min_value=min_messages, max_value=max_messages)
+        
+        mensagens_filtrado = Filters(data_frame=messages_per_day)
+        mensagens_filtrado.apply_message_filter(min_qtd=min_messages, max_qtd=max_messages)
+        messages_chart = messages_a_day.messages_a_day(data=mensagens_filtrado.df, date_period=[inicio, fim])
+        last_bat = last_battery_chart.last_battery(data=concatenado)
         st.plotly_chart(messages_chart, use_container_width=True)
+        st.plotly_chart(last_bat, use_container_width=True)
 
 
 lottie = lottie_loader.load_lottieurl('https://assets7.lottiefiles.com/packages/lf20_puciaact.json')
 accept = lottie_loader.load_lottieurl('https://assets3.lottiefiles.com/datafiles/uoZvuyyqr04CpMr/data.json')
 cat = lottie_loader.load_lottieurl('https://assets8.lottiefiles.com/temp/lf20_QYm9j9.json')
 welcome = lottie_loader.load_lottieurl('https://assets7.lottiefiles.com/packages/lf20_xnbikipz.json')
-# def load_lottiefile(path):
-#     with open(path, 'r') as f:
-#         return json.load(f)
 
 conn = start_connection()
 
@@ -182,7 +214,6 @@ if __name__ == '__main__':
         start_app(user=username)
     elif authentication_status is None:
         with menu1:
-            # welcome = load_lottiefile(r'C:\Users\guilherme.costa\Desktop\Thiago\sO6kXQ0Clz.json')
             st_lottie(welcome, loop=True, quality='high', width=600, height=500, speed=1.8)
             pass
     else:
