@@ -11,7 +11,7 @@ def location_status_chart(data):
                                                                                                 '<br>Date: %{x}</br>' + 
                                                                                                 '<i>Status: %{y}</i>'))
 
-    fig.update_layout(height=500, title=dict(text='Location Status through time', font=dict(size=25), x=0.5,y=0.93, xanchor='center', yanchor='top'))   
+    fig.update_layout(height=500, title=dict(text='Location Status over time', font=dict(size=25), x=0.5,y=0.93, xanchor='center', yanchor='top'))   
     fig.update_yaxes(tickfont=dict(size=18), showgrid=False)
     fig.update_xaxes(showgrid=True, griddash='solid', showline=True, linewidth=1, color='gray', mirror=True,
                      tickfont=dict(size=16))
