@@ -1,11 +1,11 @@
 QUERY_BOVINE_DASHBOARD = """
-SELECT * FROM public."bovinedashboards";
+SELECT * FROM public."bovinedashboards2v"
 """
 
 COLUMNS_TO_DATAFRAME = """
 SELECT column_name
 FROM information_schema.columns
-WHERE table_schema = 'public' AND table_name = 'bovinedashboards';
+WHERE table_schema = 'public' AND table_name = 'bovinedashboards2v';
 """
 
 BOVINE_NUMBER = """
@@ -13,58 +13,58 @@ SELECT count(*) FROM public."Eartags"
 """
 
 BATTERY_MEAN_LAST_30DAYS = """
-SELECT round(avg(battery)::numeric, 3) FROM public."bovinedashboards" bov
+SELECT round(avg(battery)::numeric, 3) FROM public."bovinedashboards2v" bov
 WHERE payloaddatetime BETWEEN (current_date - interval '1' month) AND current_date
 """
 
 BATTERY_MEAN_LAST_60DAYS = """
-SELECT round(avg(battery)::numeric, 2) FROM public."bovinedashboards" bov
+SELECT round(avg(battery)::numeric, 2) FROM public."bovinedashboards2v" bov
 WHERE payloaddatetime BETWEEN (current_date - interval '2' month) AND (current_date - interval '1' month)
 """
 
 BATTERY_MEAN_LAST_24HOURS = """
-SELECT round(avg(battery::numeric), 3) FROM public."bovinedashboards" bov
+SELECT round(avg(battery::numeric), 3) FROM public."bovinedashboards2v" bov
 WHERE payloaddatetime BETWEEN (current_date - interval '1' day) AND current_date
 """
 
 BATTERY_MEAN_LAST_48HOURS = """
-SELECT round(avg(battery::numeric), 3) FROM public."bovinedashboards" bov
+SELECT round(avg(battery::numeric), 3) FROM public."bovinedashboards2v" bov
 WHERE payloaddatetime BETWEEN (current_date - interval '2' day) AND (current_date - interval '1' day)
 """
 
 BOVINE_PER_FARM = """
-SELECT "Name", count(DISTINCT "PLM") FROM public."bovinedashboards"
+SELECT "Name", count(DISTINCT "PLM") FROM public."bovinedashboards2v"
 GROUP BY "Name";
 """
 
 BOVINE_PER_RACE = """
-SELECT race_name Race, count(DISTINCT "PLM") Qtd FROM public."bovinedashboards"
+SELECT race_name Race, count(DISTINCT "PLM") Qtd FROM public."bovinedashboards2v"
 GROUP BY race_name;
 """
 
 BATTERY_METRICS_30DAYS = """
 SELECT DISTINCT payloaddatetime::date, round(avg("battery"::numeric), 2), round(max("battery"::numeric),2), round(min("battery"::numeric),2)
-FROM public."bovinedashboards"
+FROM public."bovinedashboards2v"
 WHERE payloaddatetime BETWEEN (current_date - interval '1' month) AND current_date
 GROUP BY payloaddatetime::date
 ORDER BY payloaddatetime::date
 """
 
 MESSAGES_A_DAY = """
-SELECT "PLM", count("PLM") messages FROM public."bovinedashboards"
+SELECT "PLM", count("PLM") messages FROM public."bovinedashboards2v"
 GROUP BY "PLM"; 
 """
 
 LAST_BATTERY_QUERY = """
 SELECT bv_dash1."PLM", bv_dash1.payloaddatetime, round(bv_dash2.battery::numeric, 2)
-FROM "eartag-ioda-prod".public.bovinedashboards bv_dash1
+FROM "eartag-ioda-prod".public.bovinedashboards2v bv_dash1
 JOIN (
 	SELECT bv_dash2."PLM", bv_dash2.payloaddatetime, bv_dash2.battery
-	FROM "eartag-ioda-prod".public.bovinedashboards bv_dash2
+	FROM "eartag-ioda-prod".public.bovinedashboards2v bv_dash2
 ) bv_dash2 ON bv_dash1."PLM" = bv_dash2."PLM" AND bv_dash1.payloaddatetime = bv_dash2.payloaddatetime
 WHERE bv_dash1.payloaddatetime = (
 	SELECT max(payloaddatetime)
-	FROM "eartag-ioda-prod".public.bovinedashboards
+	FROM "eartag-ioda-prod".public.bovinedashboards2v
 	WHERE "PLM" = bv_dash1."PLM"
 )
 ORDER BY bv_dash1.payloaddatetime DESC;
@@ -78,16 +78,28 @@ CASE
 	WHEN bv_dash2.battery <= 3.8 THEN 'Between 3.6V and 3.8V'
 	ELSE 'Greater than 3.8V'
 END battery_indice
-FROM "eartag-ioda-prod".public.bovinedashboards bv_dash1
+FROM "eartag-ioda-prod".public.bovinedashboards2v bv_dash1
 JOIN (
 	SELECT bv_dash2."PLM", bv_dash2.payloaddatetime, bv_dash2.battery
-	FROM "eartag-ioda-prod".public.bovinedashboards bv_dash2
+	FROM "eartag-ioda-prod".public.bovinedashboards2v bv_dash2
 ) bv_dash2 ON bv_dash1."PLM" = bv_dash2."PLM" AND bv_dash1.payloaddatetime = bv_dash2.payloaddatetime
 WHERE bv_dash1.payloaddatetime = (
 	SELECT max(payloaddatetime)
-	FROM "eartag-ioda-prod".public.bovinedashboards
+	FROM "eartag-ioda-prod".public.bovinedashboards2v
 	WHERE "PLM" = bv_dash1."PLM"
 )
 ORDER BY bv_dash1.payloaddatetime DESC) geral
 GROUP BY battery_indice;
+"""
+
+LOCATION_STATUS = """
+SELECT ea."PLM", "LocationStatus", "Date", r."Name", f."Name"  FROM public."BovineHistories" bh
+LEFT JOIN "Eartags" ea ON
+	bh."BovineId" = ea."BovineId"
+JOIN "Farms" f ON
+	ea."FarmId" = f."Id"
+JOIN "Bovines" b ON
+	ea."BovineId" = b."Id"
+JOIN "Races" r ON
+	b."RaceId" = r."Id"
 """

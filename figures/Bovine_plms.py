@@ -2,7 +2,7 @@ import plotly.graph_objects as go
 from .update_fig_elements import alter_hover, alter_legend
 import pandas as pd
 
-def plot_scatter_plm(data, date_period):
+def plot_scatter_plm(data, date_period, qtd):
     fig = go.Figure()
     for name, groups in data:
         groups.sort_values(by='payloaddatetime', inplace=True)
@@ -17,12 +17,12 @@ def plot_scatter_plm(data, date_period):
     start_month, end_month = [date_period[0].month, date_period[1].month]
     start_year, end_year = [date_period[0].year, date_period[1].year]
 
-    fig.update_layout(height=900, title=dict(text=f'Battery level per bovine from {start_year}/{start_month}/{start_day} to {end_year}/{end_month}/{end_day}', xanchor='center',yanchor='top', 
+    fig.update_layout(height=600, title=dict(text=f'Battery level per bovine from {start_year}/{start_month}/{start_day} to {end_year}/{end_month}/{end_day} - {qtd} bovines', xanchor='center',yanchor='top', 
                                         x=0.5, y=0.93, font=dict(size=25)
                                         ),
                     legend=dict(orientation='v'), template='seaborn', yaxis_tickformat = f'V')
     
-    fig.update_yaxes(tickfont=dict(size=16), title=dict(text="Voltage", font=dict(size=16)))
+    fig.update_yaxes(tickfont=dict(size=16), title=dict(text="Voltage", font=dict(size=18)))
     fig.update_xaxes(tickfont=dict(size=16), title=dict(font=dict(size=16)),
                      showgrid=True, griddash='dash')
 

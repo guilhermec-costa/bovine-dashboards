@@ -9,7 +9,7 @@ credentials:
       name: general user
       password: $2b$12$F91s7k69iTm5likjBRInkeVpx75w1g3IpXVAzUWKwCFV0rcy87zLC
 cookie:
-  expiry_days: 0
+  expiry_days: 30
   key: "random key"
   name: lil cookie    
 preauthorized:

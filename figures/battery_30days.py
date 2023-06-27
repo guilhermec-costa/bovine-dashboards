@@ -8,7 +8,7 @@ def line_battery_chart(data):
     fig.add_trace(go.Scatter(x=data['Date'], y=data['Min'], name='Min battery', mode='lines+markers', line=dict(color='#BEA7E4')))
 
     fig.update_layout(title=dict(text='Battery perfomance last 30 days', x=0.5, y=0.9, yanchor='top', xanchor='center', font=dict(size=18)),
-                      template='seaborn')
+                      template='seaborn', height=400)
     
     fig.update_xaxes(tickvals=data['Date'], tickangle=30, tickfont=dict(size=14), showgrid=True, griddash='dash')
 
