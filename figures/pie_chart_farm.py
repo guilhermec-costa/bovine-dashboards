@@ -8,8 +8,8 @@ def farm_chart(data):
                  hover_name='Farm_name', hover_data=['Qtd'])
 
     fig.update_traces(textinfo='percent', textfont_size=20, marker=dict(line=dict(color='#230166', width=1)))
-    fig.update_layout(title=dict(text='Bovine per farm', font=dict(size=20), yanchor='top', xanchor='center', x=0.5, y=0.97),
-                      legend=dict(x=0.78, y=0.7, orientation='v'))
+    fig.update_layout(title=dict(text='Bovine per farm', font=dict(size=25, family='roboto'), yanchor='top', xanchor='center', x=0.5, y=0.97),
+                      legend=dict(x=0.78, y=0.7, orientation='v'), font_family='roboto')
 
     alter_hover(fig)
     alter_legend(fig, title='Farms')

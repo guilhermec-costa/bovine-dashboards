@@ -45,10 +45,16 @@ class GridBuilder:
         return gd_options
 
     def grid_builder(self, height=500):
-
+        custom_css = {
+            ".ag-root.ag-unselectable.ag-layout-normal": {"font-size": "13px",
+            "font-family": "Roboto, sans-serif !important;", "text-align":"center"},
+            ".ag-header-cell-label": {"justify-content": "center;"},
+            ".ag-theme-light button": {"font-size": "0 !important;", "width": "auto !important;", "height": "24px !important;"},
+            ".ag-theme-light button:before": {"content": "'Confirm' !important", "position": "relative !important;"}
+        }
         tab = AgGrid(self.data, gridOptions=self.gdoptions,
                      theme="balham", key=self.grid_key, height=height,
-                     update_mode=self.updatemode, data_return_mode=DataReturnMode.FILTERED_AND_SORTED,
-                     columns_auto_size_mode=ColumnsAutoSizeMode.FIT_ALL_COLUMNS_TO_VIEW)
+                     update_mode=self.updatemode, data_return_mode=DataReturnMode.FILTERED_AND_SORTED, allow_unsafe_jscode=True,
+                     columns_auto_size_mode=ColumnsAutoSizeMode.FIT_ALL_COLUMNS_TO_VIEW, custom_css=custom_css)
 
         return tab, tab.data

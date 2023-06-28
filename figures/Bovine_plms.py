@@ -18,13 +18,12 @@ def plot_scatter_plm(data, date_period, qtd):
     start_year, end_year = [date_period[0].year, date_period[1].year]
 
     fig.update_layout(height=600, title=dict(text=f'Battery level per bovine from {start_year}/{start_month}/{start_day} to {end_year}/{end_month}/{end_day} - {qtd} bovines', xanchor='center',yanchor='top', 
-                                        x=0.5, y=0.93, font=dict(size=25)
+                                        x=0.5, y=0.93, font=dict(size=25, family='roboto')
                                         ),
-                    legend=dict(orientation='v'), template='seaborn', yaxis_tickformat = f'V')
+                    legend=dict(orientation='v'), template='plotly', font_family='roboto')
     
-    fig.update_yaxes(tickfont=dict(size=16), title=dict(text="Voltage", font=dict(size=18)))
-    fig.update_xaxes(tickfont=dict(size=16), title=dict(font=dict(size=16)),
-                     showgrid=True, griddash='dash')
+    fig.update_yaxes(tickfont=dict(size=16, family='roboto'), title=dict(text="Voltage", font=dict(size=18)))
+    fig.update_xaxes(tickfont=dict(size=16, family='roboto'), showgrid=True, griddash='dash')
 
     # alterando o design do cursor e da legenda
     alter_legend(fig=fig, title='PLM')

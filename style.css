@@ -1,4 +1,4 @@
-
+@import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
 
 /* CSS */
 .css-1qn602h[kind="secondaryFormSubmit"] {
@@ -10,11 +10,12 @@
   box-sizing: border-box;
   color: #FFFFFF;
   display: flex;
-  font-size: 20px;
+  height: 35px;
+  font-size: 40px;
   justify-content: center;
   line-height: 1em;
   max-width: 100%;
-  min-width: 140px;
+  min-width: 120px;
   padding: 3px;
   text-decoration: none;
   user-select: none;
@@ -27,6 +28,7 @@
 .css-1qn602h[kind="secondaryFormSubmit"]:active,
 .css-1qn602h[kind="secondaryFormSubmit"]:hover {
   outline: 0;
+  color: whitesmoke;
 }
 
 .css-1qn602h[kind="secondaryFormSubmit"] span {
@@ -48,4 +50,77 @@
     min-width: 175px;
   }
 }
+.css-6qob1r .css-czbs5b {
+  position: relative;
+  bottom: 100%;
+  width: 25%;
+}
 
+.css-6qob1r {
+  background: rgb(2,0,36);
+  background: linear-gradient(180deg, rgba(2,0,36,1) 31%, rgba(85,0,255,1) 100%);
+}
+
+.h1, .button, body {
+  font-family: 'Roboto', sans-serif;
+}
+
+/* CSS */
+
+/* CSS */
+.css-1fdqkex.edgvbvh10 {
+  align-items: center;
+  background-color: initial;
+  background-image: linear-gradient(#464d55, #25292e);
+  border-radius: 8px;
+  border-width: 0;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, .1),0 3px 6px rgba(0, 0, 0, .05);
+  box-sizing: border-box;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  flex-direction: column;
+  font-family: expo-brand-demi,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";
+  font-size: 18px;
+  height: 45px;
+  justify-content: center;
+  line-height: 1;
+  margin: 0;
+  outline: none;
+  overflow: hidden;
+  padding: 0 32px;
+  text-align: center;
+  text-decoration: none;
+  transform: translate3d(0, 0, 0);
+  transition: all 150ms;
+  vertical-align: baseline;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.css-1fdqkex.edgvbvh10:hover {
+  box-shadow: rgba(0, 1, 0, .2) 0 2px 8px;
+  opacity: .85;
+}
+
+.css-1fdqkex.edgvbvh10:active {
+  outline: 0;
+}
+
+.css-1fdqkex.edgvbvh10:focus {
+  box-shadow: rgba(0, 0, 0, .5) 0 0 0 3px;
+}
+
+@media (max-width: 420px) {
+  .css-1fdqkex.edgvbvh10 {
+    height: 48px;
+  }
+}
+
+.css-1c8hduo {
+  color:whitesmoke;
+  font-family: 'Roboto', sans-serif;
+  font-size: 35px;
+}

@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import streamlit as st
 import psycopg2 as pgsql
 from grid_builder import GridBuilder
-from filters import Filters
+from filters import Filters, BuildFilterForms
 from figures import (Bovine_plms, pie_chart_farm, pie_chart_race, battery_30days, location_status_chart,
                     messages_a_day, last_battery_chart_fig, battery_categories, pie_chart_messages)
 import queries.bovine_query as bovn_q
@@ -12,10 +12,10 @@ from streamlit_extras.metric_cards import style_metric_cards
 from authenticator import login_authenticator
 from streamlit_extras.toggle_switch import st_toggle_switch
 import lottie_loader
-from datetime import datetime, timedelta
+# from datetime import datetime, timedelta
+import datetime
 import pytz
 from streamlit_lottie import st_lottie
-
     
 streamlit_style = """
     <style>
@@ -28,9 +28,9 @@ streamlit_style = """
 """
 
 welcome = lottie_loader.load_lottieurl('https://assets7.lottiefiles.com/packages/lf20_xnbikipz.json')
-limit_24h = datetime.now(tz=pytz.timezone('Brazil/East')) - timedelta(days=1)
-limit_48h = datetime.now(tz=pytz.timezone('Brazil/East')) - timedelta(days=2)
-limit_5days = datetime.now(tz=pytz.timezone('Brazil/East')) - timedelta(days=5)
+limit_24h = datetime.datetime.now(tz=pytz.timezone('Brazil/East')) - datetime.timedelta(days=1)
+limit_48h = datetime.datetime.now(tz=pytz.timezone('Brazil/East')) - datetime.timedelta(days=2)
+limit_5days = datetime.datetime.now(tz=pytz.timezone('Brazil/East')) - datetime.timedelta(days=5)
 
 @st.cache_resource
 def start_connection():
@@ -72,33 +72,37 @@ def initialize_session_state():
     if 'name' not in st.session_state:
         st.session_state['name'] = False
 
+            # Atualiza as opções do multiselect manualmente
+def update_opcs(dataframe):
+    valor_novo = dataframe['PLM'].unique()
+    return valor_novo  
+
 def start_app(user):
-    st.session_state.new_user = False
     st.session_state.logout = False
     st.session_state.apply_filters_button = False
     *_, logout_position = st.columns(12)
 
-    with logout_position:
-        logout = login_authenticator.logout('Logout', 'main')
+    with st.sidebar:
+        # with logout_position:
         st.session_state.logout = True
-    st.success(f'Your welcome {user.capitalize()}!')
-    st.markdown('###')
+        st.markdown('---')
+        st.title(f'Your welcome {user.capitalize()}!')
+        with st.spinner('Logging off...'):
+            logout = login_authenticator.logout('Logout', 'main')
     
     farm_chart = pie_chart_farm.farm_chart(data=bovine_per_farm)
     race_chart = pie_chart_race.race_chart(data=bovine_per_race)
     volt_ranges = battery_categories.battery_categories(data=volts_categories)
     battery_chart = battery_30days.line_battery_chart(data=battery_metrics_30days)
-    location_status_data['Date'] = location_status_data['Date'].apply(lambda x: x if str(x) != '0001-01-01 00:00:00+00:00' else datetime.now(tz=pytz.timezone('Brazil/East')))
 
+    # Tratamento de dados
+    location_status_data['Date'] = location_status_data['Date'].apply(lambda x: x if str(x) != '0001-01-01 00:00:00+00:00' else datetime.datetime.now(tz=pytz.timezone('Brazil/East')))
     location_status_data['Date'] = pd.to_datetime(location_status_data['Date'], utc=True, errors='coerce')
     location_status_data['Status'] = location_status_data['Status'].apply(lambda x: 'Valid location' if x else 'Invalid location')
 
     colunas = [x[0] for x in columns_name]
     df = pd.DataFrame(content, columns=colunas)
     df['payloaddatetime'] = pd.to_datetime(df['payloaddatetime'], utc=True)
-
-
-    # Função que multiplica por 1000 os valores menores que 100 na voltagem.
     df['battery'] = df['battery'].apply(lambda x: x / 1000 if x > 100 else x)
 
     filtered_24h = df[df['payloaddatetime'] >= limit_24h]
@@ -119,7 +123,7 @@ def start_app(user):
     metric3.metric(label='last 24 hours battery perfomance', value=f'{battery_mean_last24hours}V', 
                     delta=diff_last_day,
                     help='last 24 hours battery performance in comparison with the 48 last hours battery perfomance')
-    style_metric_cards(background_color='#6D23FF', border_size_px=1.5, 
+    style_metric_cards(background_color='#6D23FF', border_size_px=1.5, box_shadow=True, 
                     border_color='#39275B', border_radius_px=25, border_left_color='#39275B')
 
     with st.expander(label='Battery perfomance'):
@@ -136,62 +140,64 @@ def start_app(user):
 
     *_, download_btn = st.columns(12, gap='small')
 
-    download_database = download_btn.download_button(label='Download data', data=df.to_csv(), file_name='novo_arquivo.csv',
-                                                mime='text/csv', key='download_btn')
+    download_database = download_btn.download_button(label='Download data', data=df.to_csv(), file_name=f'bovine_data_{datetime.datetime.now()}',
+                                                mime='text/csv', key='download_btn', use_container_width=True)
     
     vw_tab_aggrid = GridBuilder(df, key='filtered_df.df')
     tab_formatada, bovine_data = vw_tab_aggrid.grid_builder()
-    
-    clear_rows(bovine_data)
+    clear_rows(bovine_data, drop_mode='any', drop_axis=0, sort_by_cols=['payloaddatetime', 'PLM'], sort_sequence=[False, True])
 
     filtered_df = Filters(data_frame=bovine_data)
     filtered_status_loc = Filters(data_frame=location_status_data)
 
     filtered_status_loc.df['Date'] = pd.to_datetime(filtered_status_loc.df.Date)
+    filtered_status_loc.df['Time'] = filtered_status_loc.df['Date'].apply(lambda x: x.time())
     filtered_df.df['payloaddatetime'] = pd.to_datetime(filtered_df.df.payloaddatetime)
+    filtered_df.df['Time'] = filtered_df.df['payloaddatetime'].apply(lambda x: x.time())
     filtered_df.df['CreatedAt'] = pd.to_datetime(filtered_df.df.CreatedAt)
 
-    # filtro de datas
-    with st.form(key='filters'):
-        c1, c2 = st.columns(2)
-        inicio = c1.date_input(label='Start date:', max_value=datetime.now(tz=pytz.timezone('Brazil/East')), min_value=filtered_df.df['payloaddatetime'].min(),
-                            key='data_inicio', value=datetime.now(tz=pytz.timezone('Brazil/East')) - timedelta(days=1))
-        fim = c2.date_input(label='End date:', min_value=filtered_df.df['CreatedAt'].min(), max_value=filtered_df.df['payloaddatetime'].max() + timedelta(days=1),
-                        key='data_fim', value=datetime.now(tz=pytz.timezone('Brazil/East')) + timedelta(days=1))
-
-        inicio = datetime.combine(inicio, datetime.min.time(), tzinfo=pytz.timezone('Brazil/East'))
-        fim = datetime.combine(fim, datetime.min.time(), tzinfo=pytz.timezone('Brazil/East'))
-
-        c1__farm, c2_plm, c3_race = st.columns(3)
-        
-        farm_filter_opcs = c1__farm.multiselect(label='Choose a farm', options=filtered_df.df['Name'].unique())
-        
-        race_filter_options = c3_race.multiselect(label='Choose a race', options=filtered_df.df['race_name'].unique())
-        plm_filter_options = c2_plm.multiselect(label='Choose any PLM', options=filtered_df.df['PLM'].unique())
-
-        min_battery = float(filtered_df.df['battery'].min())
-        max_battery = float(filtered_df.df['battery'].max())
-        min_bat, max_bat = st.slider(label='Battery range', value=[min_battery, max_battery], 
-                                min_value=min_battery,max_value=max_battery, step=0.05, help='Only can be applied to the battery level per bovine figure.')
-
-        if st.form_submit_button(label='Apply filters'):
-            st.session_state.apply_filters_button = True
-            filtered_df.apply_date_filter(start=inicio, end=fim, refer_column='payloaddatetime', trigger_error=True)
-            filtered_status_loc.apply_date_filter(start=inicio, end=fim, refer_column='Date')
-            if len(plm_filter_options) >= 1: 
-                filtered_df.apply_plm_filter(options=plm_filter_options, refer_column='PLM')
-                filtered_status_loc.apply_plm_filter(options=plm_filter_options, refer_column='PLM')
-            if len(race_filter_options) >= 1:
-                filtered_df.apply_race_filter(options=race_filter_options, refer_column='race_name')
-                filtered_status_loc.apply_race_filter(options=race_filter_options, refer_column='race_Name')
-            if len(farm_filter_opcs) >= 1:
-                filtered_df.apply_farm_filter(options=farm_filter_opcs, refer_column='Name')
-                filtered_status_loc.apply_farm_filter(options=farm_filter_opcs, refer_column='farm_name')
-            filtered_df.apply_battery_filter(bat_min=min_bat, bat_max=max_bat)
-
-    filtered_df.apply_date_filter(start=inicio, end=fim, refer_column='payloaddatetime')
-    filtered_status_loc.apply_date_filter(start=inicio, end=fim, refer_column='Date')
+    # with st.form(key='filters'):
+    c1_date, c2_date, c3_date, c4_date = st.columns(4)
+    inicio = c1_date.date_input(label='Start date:', max_value=datetime.datetime.now(tz=pytz.timezone('Brazil/East')), min_value=filtered_df.df['payloaddatetime'].min(),
+                        key='data_inicio', value=datetime.datetime.now(tz=pytz.timezone('Brazil/East')) - datetime.timedelta(days=1))
+    fim = c2_date.date_input(label='End date:', min_value=filtered_df.df['CreatedAt'].min(), max_value=filtered_df.df['payloaddatetime'].max() + timedelta(days=1),
+                    key='data_fim', value=datetime.datetime.now(tz=pytz.timezone('Brazil/East')) + datetime.timedelta(days=1))
     
+    hora_inicio = c3_date.time_input(label='Start time:', value=datetime.time(0,0))
+    hora_final = c4_date.time_input(label='End time', value=datetime.time(23, 59))
+
+    inicio = datetime.datetime.combine(inicio, datetime.datetime.min.time(), tzinfo=pytz.timezone('Brazil/East'))
+    fim = datetime.datetime.combine(fim, datetime.datetime.min.time(), tzinfo=pytz.timezone('Brazil/East'))
+
+    c1_farm, c2_plm, c3_race = st.columns(3)
+
+    farm_options = filtered_df.get_unique_options('Name')
+    farm_filter_opcs = c1_farm.multiselect(label='Choose a farm', options=farm_options, key='1farm_filter')
+    if len(farm_filter_opcs) >= 1:
+        filtered_df.apply_farm_filter(options=farm_filter_opcs, refer_column='Name')
+        filtered_status_loc.apply_farm_filter(options=farm_filter_opcs, refer_column='farm_name')
+    
+    race_options = filtered_df.get_unique_options('race_name')
+    race_filter_options = c3_race.multiselect(label='Choose a race', options=race_options, key='1race_filter')
+    if len(race_filter_options) >= 1:
+        filtered_df.apply_race_filter(options=race_filter_options, refer_column='race_name')
+        filtered_status_loc.apply_race_filter(options=race_filter_options, refer_column='race_Name')
+    
+    plm_options = update_opcs(filtered_df.df)
+    plm_filter_options = c2_plm.multiselect(label='Choose any PLM', options=plm_options, key='1plm_filter')
+    if len(plm_filter_options) >= 1: 
+        filtered_df.apply_plm_filter(options=plm_filter_options, refer_column='PLM')
+
+    min_battery = float(filtered_df.df['battery'].min())
+    max_battery = float(filtered_df.df['battery'].max())         
+    min_bat, max_bat = st.slider(label='Battery range', value=[min_battery, max_battery], 
+                            min_value=min_battery,max_value=max_battery, step=0.05, help='Only can be applied to the battery level per bovine figure.')
+    
+    filtered_df.apply_battery_filter(bat_min=min_bat, bat_max=max_bat)
+    filtered_df.apply_date_filter(start=inicio, end=fim, refer_column='payloaddatetime', trigger_error=True)
+    filtered_status_loc.apply_date_filter(start=inicio, end=fim, refer_column='Date')
+    filtered_df.apply_time_filter(start_time=hora_inicio, end_time=hora_final, trigger_error=True)
+    filtered_status_loc.apply_time_filter(start_time=hora_inicio, end_time=hora_final)
     messages_per_day = filtered_df.df.groupby(by='PLM').count().reset_index()
     messages_per_day.rename(columns={'Identifier':'Sent Messages'}, inplace=True)
 
@@ -250,7 +256,7 @@ def start_app(user):
         st.plotly_chart(last_bat, use_container_width=True)
 
 if __name__ == '__main__':
-    st.set_page_config(layout='wide', page_title='Dashboards SpaceVis')
+    st.set_page_config(layout='wide', page_title='Dashboards SpaceVis', initial_sidebar_state='collapsed', page_icon=':bar_chart:')
     st.markdown(streamlit_style, unsafe_allow_html=True) 
     initialize_session_state()
     conn = start_connection()
