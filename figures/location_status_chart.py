@@ -40,7 +40,7 @@ def count_location_status(data, mode: str, columns_to_add, barmode='group'):
     fig.update_layout(height=500, title=dict(text='Location status over time', font=dict(size=25, family='roboto'), x=0.5,y=0.93, xanchor='center', yanchor='top'),
                     template='plotly', font_family='roboto', font=dict(size=16, family='roboto')) 
     fig.update_yaxes(tickfont=dict(size=17), showgrid=True)
-    fig.update_xaxes(tickfont=dict(size=16))
+    fig.update_xaxes(tickfont=dict(size=16), tickvals=data.index)
 
     fig.update_traces(hovertemplate='<i>Date: %{x}</i>' + 
                                     '<br>Quantity: %{y}</br>')

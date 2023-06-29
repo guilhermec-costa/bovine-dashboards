@@ -146,7 +146,7 @@ def start_app(user):
     filtered_df = Filters(data_frame=bovine_data)
     filtered_status_loc = Filters(data_frame=location_status_data)
 
-    filtered_status_loc.df['Date'] = pd.to_datetime(filtered_status_loc.df.Date)
+    filtered_status_loc.df['Date'] = pd.to_datetime(filtered_status_loc.df.Date, errors='ignore')
     filtered_status_loc.df['Time'] = filtered_status_loc.df['Date'].apply(lambda x: x.time())
     filtered_df.df['payloaddatetime'] = pd.to_datetime(filtered_df.df.payloaddatetime)
     filtered_df.df['Time'] = filtered_df.df['payloaddatetime'].apply(lambda x: x.time())
@@ -232,9 +232,13 @@ def start_app(user):
                         if len(status_opcs) >= 1:
                             filtered_status_loc.apply_status_filter(options=status_opcs)
                             st.session_state.status_opcs = status_opcs
-            status_loc_agrupado = filtered_status_loc.df.groupby(by=['Mes-Dia', 'Status']).count()['PLM']    
-            colunas = status_loc_agrupado.unstack(level='Status').columns
-            loc_status_count_chart = location_status_chart.count_location_status(status_loc_agrupado.unstack(level='Status'), mode=chart_mode_switch, barmode=barmode.lower(),
+            status_loc_agrupado = filtered_status_loc.df.groupby(by=['Mes-Dia', 'Status']).count()['PLM']
+            status_loc_agrupado.index = pd.MultiIndex.from_tuples(
+            [(pd.to_datetime(date, format="%b %d, %Y"), status) for date, status in status_loc_agrupado.index])
+            colunas = status_loc_agrupado.unstack(level=1).columns
+            status_loc_unstacked = status_loc_agrupado.sort_index(level=0).unstack(level=1)
+            loc_status_count_chart = location_status_chart.count_location_status(status_loc_unstacked,
+                                                                                  mode=chart_mode_switch, barmode=barmode.lower(),
                                                                                   columns_to_add = colunas)
             st.plotly_chart(loc_status_count_chart, use_container_width=True)
         else:
