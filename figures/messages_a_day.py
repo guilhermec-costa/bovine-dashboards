@@ -1,5 +1,5 @@
 import plotly.express as px
-from .update_fig_elements import alter_hover, alter_legend
+from .update_fig_elements import alter_hover
 
 def messages_a_day(data, date_period):
     fig = px.bar(data_frame=data, x='PLM', y='Sent Messages', color='Sent Messages', color_continuous_scale=px.colors.sequential.Plotly3_r, height=500,

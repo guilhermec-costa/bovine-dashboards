@@ -1,6 +1,5 @@
 import plotly.graph_objects as go
 from .update_fig_elements import alter_hover, alter_legend
-import pandas as pd
 
 def plot_scatter_plm(data, date_period, qtd):
     fig = go.Figure()
@@ -17,7 +16,7 @@ def plot_scatter_plm(data, date_period, qtd):
     start_month, end_month = [date_period[0].month, date_period[1].month]
     start_year, end_year = [date_period[0].year, date_period[1].year]
 
-    fig.update_layout(height=600, title=dict(text=f'Battery level per bovine from {start_year}/{start_month}/{start_day} to {end_year}/{end_month}/{end_day} - {qtd} bovines', xanchor='center',yanchor='top', 
+    fig.update_layout(height=700, title=dict(text=f'Battery level per bovine from {start_year}/{start_month}/{start_day} to {end_year}/{end_month}/{end_day} - {qtd} bovines', xanchor='center',yanchor='top', 
                                         x=0.5, y=0.93, font=dict(size=25, family='roboto')
                                         ),
                     legend=dict(orientation='v'), template='plotly', font_family='roboto')

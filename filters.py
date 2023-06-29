@@ -29,6 +29,9 @@ class Filters:
         self.df = data_frame
         self.c1_date, self.c2_date = st.columns(2)
 
+    # def __repr__(self):
+    #     print('Filters(data_frame)')
+
     def apply_date_filter(self, start, end, refer_column:str, trigger_error=False):
         if start <= end:
             self.df = self.df[(self.df[refer_column] >= start) & (self.df[refer_column] <= end)]
@@ -64,6 +67,7 @@ class Filters:
     def apply_deveui_filter(self, options, refer_column):
         self.df = self.df[self.df[refer_column].isin(options)]
 
+    @classmethod
     def return_data_frame(self):
         return self.df
     
@@ -76,23 +80,33 @@ class Filters:
     def apply_message_filter(self, min_qtd, max_qtd):
         self.df = self.df[(self.df['Sent Messages'] >= min_qtd) & (self.df['Sent Messages'] <= max_qtd)]
 
+    def apply_status_filter(self, options):
+        self.df = self.df[self.df['Status'].isin(options)]
+
     def get_unique_options(self, refer_column):
         return self.df[refer_column].unique()
     
+# class DateFilters(Filters):
+#     def __init__(self, data_frame):
+#         super().__init__(data_frame)
 
-class BuildFilterForms:
-    def __init__(self, data_frame):
-        self.df = data_frame
-        self.c1_date, self.c2_date = st.columns(2)
-
-    def build_date_filter(self):
-        c1_date, c2_date = st.columns(2)
-        inicio = c1_date.date_input(label='Start date:', max_value=datetime.datetime.now(tz=pytz.timezone('Brazil/East')), min_value=self.df['payloaddatetime'].min(),
-                        key='data_inicio', value=datetime.datetime.now(tz=pytz.timezone('Brazil/East')) - datetime.timedelta(days=1))
-        fim = c2_date.date_input(label='End date:', min_value=self.df['CreatedAt'].min(), max_value=self.df['payloaddatetime'].max() + datetime.timedelta(days=1),
-                    key='data_fim', value=datetime.datetime.now(tz=pytz.timezone('Brazil/East')) + datetime.timedelta(days=1))
+#     @classmethod
+#     def apply_date_filter(self, start, end, refer_column:str, trigger_error=False):
+#         if start <= end:
+#             self.df = self.df[(self.df[refer_column] >= start) & (self.df[refer_column] <= end)]
+#             return
         
-    def build_plm_filter(self):
-        total_opcs= self.df['PLM'].unique()
-        plm_filter_options = st.multiselect(label='Choose any PLM', options=total_opcs, key='plm_alternative')
-        return plm_filter_options
+#         default_start_date = datetime.datetime.now(tz=pytz.timezone('Brazil/East'))  - datetime.timedelta(days=1)
+#         default_end_date = datetime.datetime.now(tz=pytz.timezone('Brazil/East')) + datetime.timedelta(days=1)
+#         self.df = self.df[(self.df[refer_column] >= default_start_date) &
+#                             (self.df[refer_column] <= default_end_date)]
+#         if trigger_error:
+#             self.c1_date.write(f'<div style="{style_markdown_error}">There is no data. Start date set to {default_start_date.strftime("%Y-%m-%d %H:%M:%S")} and end date set to {default_end_date.strftime("%Y-%m-%d %H:%M:%S")}.</div>',
+#                                unsafe_allow_html=True)
+#             self.c2_date.write(f'<div style="{style_markdown_warning}">Verify if START DATE is greater than END DATE. </div>', unsafe_allow_html=True)
+
+#     def search_dataframes():
+#         return Filters.return_data_frame()
+    
+#     def show_dataframes(self):
+#         st.write(self.df)

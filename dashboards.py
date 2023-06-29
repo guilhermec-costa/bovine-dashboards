@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import streamlit as st
 import psycopg2 as pgsql
 from grid_builder import GridBuilder
-from filters import Filters, BuildFilterForms
+from filters import Filters
 from figures import (Bovine_plms, pie_chart_farm, pie_chart_race, battery_30days, location_status_chart,
                     messages_a_day, last_battery_chart_fig, battery_categories, pie_chart_messages)
 import queries.bovine_query as bovn_q
@@ -12,7 +12,6 @@ from streamlit_extras.metric_cards import style_metric_cards
 from authenticator import login_authenticator
 from streamlit_extras.toggle_switch import st_toggle_switch
 import lottie_loader
-# from datetime import datetime, timedelta
 import datetime
 import pytz
 from streamlit_lottie import st_lottie
@@ -71,11 +70,8 @@ def initialize_session_state():
         st.session_state['authentication_status'] = None
     if 'name' not in st.session_state:
         st.session_state['name'] = False
-
-            # Atualiza as opções do multiselect manualmente
-def update_opcs(dataframe):
-    valor_novo = dataframe['PLM'].unique()
-    return valor_novo  
+    if 'status_opcs' not in st.session_state:
+            st.session_state.status_opcs = ['Valid location', 'Invalid location']
 
 def start_app(user):
     st.session_state.logout = False
@@ -99,7 +95,7 @@ def start_app(user):
     location_status_data['Date'] = location_status_data['Date'].apply(lambda x: x if str(x) != '0001-01-01 00:00:00+00:00' else datetime.datetime.now(tz=pytz.timezone('Brazil/East')))
     location_status_data['Date'] = pd.to_datetime(location_status_data['Date'], utc=True, errors='coerce')
     location_status_data['Status'] = location_status_data['Status'].apply(lambda x: 'Valid location' if x else 'Invalid location')
-
+    location_status_data['Mes-Dia'] = location_status_data['Date'].apply(lambda x: x.strftime('%b %d, %Y'))
     colunas = [x[0] for x in columns_name]
     df = pd.DataFrame(content, columns=colunas)
     df['payloaddatetime'] = pd.to_datetime(df['payloaddatetime'], utc=True)
@@ -159,15 +155,15 @@ def start_app(user):
     # with st.form(key='filters'):
     c1_date, c2_date, c3_date, c4_date = st.columns(4)
     inicio = c1_date.date_input(label='Start date:', max_value=datetime.datetime.now(tz=pytz.timezone('Brazil/East')), min_value=filtered_df.df['payloaddatetime'].min(),
-                        key='data_inicio', value=datetime.datetime.now(tz=pytz.timezone('Brazil/East')) - datetime.timedelta(days=1))
+                        key='data_inicio', value=datetime.datetime.now(tz=pytz.timezone('Brazil/East')))
     fim = c2_date.date_input(label='End date:', min_value=filtered_df.df['CreatedAt'].min(), max_value=filtered_df.df['payloaddatetime'].max() + timedelta(days=1),
                     key='data_fim', value=datetime.datetime.now(tz=pytz.timezone('Brazil/East')) + datetime.timedelta(days=1))
     
     hora_inicio = c3_date.time_input(label='Start time:', value=datetime.time(0,0))
     hora_final = c4_date.time_input(label='End time', value=datetime.time(23, 59))
 
-    inicio = datetime.datetime.combine(inicio, datetime.datetime.min.time(), tzinfo=pytz.timezone('Brazil/East'))
-    fim = datetime.datetime.combine(fim, datetime.datetime.min.time(), tzinfo=pytz.timezone('Brazil/East'))
+    inicio = datetime.datetime.combine(inicio, datetime.datetime.min.time(), tzinfo=pytz.UTC) - timedelta(days=1)
+    fim = datetime.datetime.combine(fim, datetime.datetime.min.time(), tzinfo=pytz.UTC)
 
     c1_farm, c2_plm, c3_race = st.columns(3)
 
@@ -183,10 +179,11 @@ def start_app(user):
         filtered_df.apply_race_filter(options=race_filter_options, refer_column='race_name')
         filtered_status_loc.apply_race_filter(options=race_filter_options, refer_column='race_Name')
     
-    plm_options = update_opcs(filtered_df.df)
+    plm_options = filtered_df.get_unique_options('PLM')
     plm_filter_options = c2_plm.multiselect(label='Choose any PLM', options=plm_options, key='1plm_filter')
     if len(plm_filter_options) >= 1: 
         filtered_df.apply_plm_filter(options=plm_filter_options, refer_column='PLM')
+        filtered_status_loc.apply_plm_filter(options=plm_filter_options, refer_column='PLM')
 
     min_battery = float(filtered_df.df['battery'].min())
     max_battery = float(filtered_df.df['battery'].max())         
@@ -203,10 +200,8 @@ def start_app(user):
 
     # Agrupamentos por PLM
     agrupado = filtered_df.df.groupby(by='PLM')
-    loc_status_agrupado = filtered_status_loc.df.groupby(by='PLM')
     relative_bov_qtd =  len(agrupado)
     bovine_chart = Bovine_plms.plot_scatter_plm(agrupado, date_period=[inicio, fim], qtd=relative_bov_qtd)
-    loc_status_chart = location_status_chart.location_status_chart(loc_status_agrupado)
 
     agrupado_bateria = filtered_df.df.groupby(by='PLM').max()
     agrupado_bateria.reset_index(inplace=True)
@@ -219,8 +214,34 @@ def start_app(user):
         relative_bov_qtd =  len(filtered_df.df.PLM.unique())
     if not switch:
         st.plotly_chart(bovine_chart, use_container_width=True)
-        st.markdown('###')
-        st.plotly_chart(loc_status_chart, use_container_width=True)
+        st.markdown('---')
+        switch_location_count = st_toggle_switch(label='See more details', label_after=True, active_color='#F98800', inactive_color='#D3D3D3', track_color='#5E00F8')
+        barmode = 'group'
+        if not switch_location_count:
+            with st.expander('Edit figure'):
+                with st.form(key='chart_filters_count'):
+                    chart_mode, *_ = st.columns(6)
+                    with chart_mode:
+                        chart_mode_switch = st.radio(label='Choose a chart mode', options=['Only Bars', 'Only Lines', 'Mix'], horizontal=True)
+                        status_opcs = st.multiselect('Status filters', options=['Valid location', 'Invalid location'])
+                    if chart_mode_switch == 'Only Bars':
+                        barmode_widget, *_ = st.columns(6)
+                        barmode = barmode_widget.selectbox('Choose a barmode:', options=['Group', 'Stack'], index=0)
+
+                    if st.form_submit_button('Apply filters'):
+                        if len(status_opcs) >= 1:
+                            filtered_status_loc.apply_status_filter(options=status_opcs)
+                            st.session_state.status_opcs = status_opcs
+            status_loc_agrupado = filtered_status_loc.df.groupby(by=['Mes-Dia', 'Status']).count()['PLM']    
+            colunas = status_loc_agrupado.unstack(level='Status').columns
+            loc_status_count_chart = location_status_chart.count_location_status(status_loc_agrupado.unstack(level='Status'), mode=chart_mode_switch, barmode=barmode.lower(),
+                                                                                  columns_to_add = colunas)
+            st.plotly_chart(loc_status_count_chart, use_container_width=True)
+        else:
+            filtered_status_loc.apply_status_filter(options=st.session_state.status_opcs)
+            loc_status_agrupado = filtered_status_loc.df.groupby(by='PLM')
+            loc_status_chart = location_status_chart.location_status_chart(loc_status_agrupado)
+            st.plotly_chart(loc_status_chart, use_container_width=True)
     else:
         with order_switch_ascending:
             switch_ascending = st_toggle_switch(label='Order data ascending', label_after=True, active_color='#F98800', inactive_color='#D3D3D3',
@@ -244,9 +265,10 @@ def start_app(user):
 
         min_messages = int(messages_per_day['Sent Messages'].min())
         max_messages = int(messages_per_day['Sent Messages'].max())
-        
-        min_messages, max_messages = c_switch.slider(label='Messages Range', value=[min_messages, max_messages], 
-                            min_value=min_messages, max_value=max_messages)
+
+        if len(messages_per_day) > 1:
+            min_messages, max_messages = c_switch.slider(label='Messages Range', value=[min_messages, max_messages], 
+                              min_value=min_messages, max_value=max_messages)
         
         mensagens_filtrado = Filters(data_frame=messages_per_day)
         mensagens_filtrado.apply_message_filter(min_qtd=min_messages, max_qtd=max_messages)
