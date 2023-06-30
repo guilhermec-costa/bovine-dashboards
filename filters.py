@@ -25,6 +25,7 @@ vertical-align: middle;
 padding-left: 14px;
 margin: 4px;
 """
+
 class Filters:
     data_frame : pd.DataFrame
     def __init__(self, data_frame: pd.DataFrame):
@@ -48,6 +49,7 @@ class Filters:
         if start_time < end_time:
             self.df = self.df[(self.df['Time'] >= start_time) & (self.df['Time'] <= end_time)]
             return
+        
         default_start_time = datetime.time(0,0,0)
         default_end_time = datetime.time(23,59,59)
         self.df = self.df[(self.df['Time'] >= default_start_time) & (self.df['Time'] <= default_end_time)]
@@ -64,10 +66,6 @@ class Filters:
     
     def apply_deveui_filter(self, options, refer_column):
         self.df = self.df[self.df[refer_column].isin(options)]
-
-    @classmethod
-    def return_data_frame(self):
-        return self.df
     
     def apply_battery_filter(self, bat_min, bat_max):
         self.df = self.df[(self.df.battery >= bat_min) & (self.df.battery <= bat_max)]
@@ -83,9 +81,6 @@ class Filters:
 
     def apply_weight_filter(self, min_weight, max_weight):
         self.df = self.df[(self.df['Weight'] >= min_weight) & (self.df['Weight'] <= max_weight)]
-
-    def get_unique_options(self, refer_column):
-        return self.df[refer_column].unique()
     
 # class DateFilters(Filters):
 #     def __init__(self, data_frame):

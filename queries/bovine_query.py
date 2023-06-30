@@ -16,7 +16,7 @@ SELECT count(*) FROM public."Eartags"
 
 BATTERY_MEAN_LAST_30DAYS = """
 SELECT round(avg(battery)::numeric, 3) FROM public."bovinedashboards2v" bov
-WHERE payloaddatetime BETWEEN (current_date - interval '1' month) AND current_date
+WHERE payloaddatetime BETWEEN (current_date - interval '30' day) AND current_date
 """
 
 BATTERY_MEAN_LAST_60DAYS = """

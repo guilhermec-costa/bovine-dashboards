@@ -1,5 +1,5 @@
 import pandas as pd
-from datetime import datetime, timedelta
+import numpy as np
 import streamlit as st
 import psycopg2 as pgsql
 from grid_builder import GridBuilder
@@ -35,9 +35,9 @@ limit_5days = datetime.datetime.now(tz=pytz.timezone('Brazil/East')) - datetime.
 def start_connection():
     try:
         return pgsql.connect(**st.secrets['postgres'])
-    except:
+    except Exception:
         st.error('Failed to connect to database.')
-        return False
+        return None
 
 # Iniciando query
 @st.cache_data(ttl=600)
@@ -46,7 +46,6 @@ def run_query(query):
         cursor.execute(query)
         return cursor.fetchall()
 
-st.cache_data(ttl=600)
 def run_queries():
     global content, bovine_per_farm, bovine_per_race, battery_mean_last24hours, battery_mean_last48hours, battery_metrics_30days, \
     columns_name, bovine_registers, battery_mean_last24hours, battery_mean_last_month, diff_last_day, last_battery_data, volts_categories, location_status_data
@@ -72,20 +71,22 @@ def initialize_session_state():
         st.session_state['name'] = False
     if 'status_opcs' not in st.session_state:
             st.session_state.status_opcs = ['Valid location', 'Invalid location']
+    if 'logout' not in st.session_state:
+        st.session_state.logout = False
+    if 'apply_filters_button' not in st.session_state:
+        st.session_state.apply_filters_button = False
 
 def start_app(user):
     st.session_state.logout = False
-    st.session_state.apply_filters_button = False
-    *_, logout_position = st.columns(12)
 
     with st.sidebar:
-        # with logout_position:
-        st.session_state.logout = True
         st.markdown('---')
         st.title(f'Your welcome {user.capitalize()}!')
         with st.spinner('Logging off...'):
             logout = login_authenticator.logout('Logout', 'main')
+            st.session_state.logout = True if logout else False
     
+    # Gráficos dos expanders
     farm_chart = pie_chart_farm.farm_chart(data=bovine_per_farm)
     race_chart = pie_chart_race.race_chart(data=bovine_per_race)
     volt_ranges = battery_categories.battery_categories(data=volts_categories)
@@ -114,12 +115,14 @@ def start_app(user):
                                                            'Sent messages last 5+ days']).reset_index().rename(columns={'index':'Moment'})
     
     pie_chart_limits = pie_chart_messages.pie_chart_messages(data=df_limits)
+    total_weight = np.sum(df.groupby(by='PLM').agg({'Weight': np.mean})['Weight'])
+    # Exibindo as métricas
     metric1, metric2, metric3, *_ = st.columns(4, gap='medium')
-    metric1.metric(label='Active bovines', value=bovine_registers)
-    metric2.metric(label='Medium battery on last 30 days', value=f'{battery_mean_last_month}V')
-    metric3.metric(label='last 24 hours battery perfomance', value=f'{battery_mean_last24hours}V', 
-                    delta=diff_last_day,
+    metric1.metric(label='Active bovines', value=bovine_registers, delta=f'{total_weight} Kg')
+    metric2.metric(label='last 24 hours battery perfomance', value=f'{battery_mean_last24hours}V', delta=diff_last_day,
                     help='last 24 hours battery performance in comparison with the 48 last hours battery perfomance')
+    metric3.metric(label='Medium battery on last 30 days', value=f'{battery_mean_last_month}V')
+    
     style_metric_cards(background_color='#6D23FF', border_size_px=1.5, box_shadow=True, 
                     border_color='#39275B', border_radius_px=25, border_left_color='#39275B')
 
@@ -136,10 +139,10 @@ def start_app(user):
         c2_expand.plotly_chart(race_chart, use_container_width=True)
 
     *_, download_btn = st.columns(12, gap='small')
-
-    download_database = download_btn.download_button(label='Download data', data=df.to_csv(), file_name=f'bovine_data_{datetime.datetime.now()}',
-                                                mime='text/csv', key='download_btn', use_container_width=True)
+    download_btn.download_button(label='Download data', data=df.to_csv(), file_name=f'bovine_data_{datetime.datetime.now()}',
+                                            mime='text/csv', key='download_btn', use_container_width=True)
     
+    # Estilização da tabela principal
     vw_tab_aggrid = GridBuilder(df, key='filtered_df.df')
     tab_formatada, bovine_data = vw_tab_aggrid.grid_builder()
     clear_rows(bovine_data, drop_mode='any', drop_axis=0, sort_by_cols=['payloaddatetime', 'PLM'], sort_sequence=[False, True])
@@ -153,10 +156,9 @@ def start_app(user):
     filtered_df.df['Time'] = filtered_df.df['payloaddatetime'].apply(lambda x: x.time())
     filtered_df.df['CreatedAt'] = pd.to_datetime(filtered_df.df.CreatedAt)
 
-    # with st.form(key='filters'):
     c1_date, c2_date, c3_date, c4_date = st.columns(4)
     inicio = c1_date.date_input(label='Start date:', min_value=filtered_df.df['payloaddatetime'].min(), max_value=datetime.datetime.today(),
-                        key='data_inicio', value=datetime.datetime.now() - timedelta(days=2))
+                        key='data_inicio', value=datetime.datetime.now() - datetime.timedelta(days=2))
     fim = c2_date.date_input(label='End date:', min_value=filtered_df.df['CreatedAt'].min(),
                     key='data_fim', value=datetime.datetime.now() + datetime.timedelta(days=1))
     hora_inicio = c3_date.time_input(label='Start time:', value=datetime.time(0,0))
@@ -166,26 +168,22 @@ def start_app(user):
     fim = datetime.datetime.combine(fim, datetime.datetime.min.time(), tzinfo=pytz.UTC)
     c1_farm, c2_plm, c3_race = st.columns(3)
 
-    farm_options = filtered_df.get_unique_options('Name')
-    farm_filter_opcs = c1_farm.multiselect(label='Choose a farm', options=farm_options, key='1farm_filter')
+    farm_filter_opcs = c1_farm.multiselect(label='Choose a farm', options=filtered_df.df['Name'].unique(), key='farm_filter')
     if len(farm_filter_opcs) >= 1:
         filtered_df.apply_farm_filter(options=farm_filter_opcs, refer_column='Name')
         filtered_status_loc.apply_farm_filter(options=farm_filter_opcs, refer_column='farm_name')
     
-    race_options = filtered_df.get_unique_options('race_name')
-    race_filter_options = c3_race.multiselect(label='Choose a race', options=race_options, key='1race_filter')
+    race_filter_options = c3_race.multiselect(label='Choose a race', options=filtered_df.df['race_name'].unique(), key='race_filter')
     if len(race_filter_options) >= 1:
         filtered_df.apply_race_filter(options=race_filter_options, refer_column='race_name')
         filtered_status_loc.apply_race_filter(options=race_filter_options, refer_column='race_Name')
     
-    plm_options = filtered_df.get_unique_options('PLM')
-    plm_filter_options = c2_plm.multiselect(label='Choose any PLM', options=plm_options, key='1plm_filter')
+    plm_filter_options = c2_plm.multiselect(label='Choose any PLM', options=filtered_df.df['PLM'].unique(), key='plm_filter')
     if len(plm_filter_options) >= 1: 
         filtered_df.apply_plm_filter(options=plm_filter_options, refer_column='PLM')
         filtered_status_loc.apply_plm_filter(options=plm_filter_options, refer_column='PLM')
 
     bat_slider, weight_slider = st.columns(2, gap='large')
-    # Slider de bateria posicionado aqui para deixar o slider dinâmico após o filtro de bateria
     relative_min_battery = float(filtered_df.df['battery'].min())
     relative_max_battery = float(filtered_df.df['battery'].max())
     relative_min_weight = float(filtered_df.df['Weight'].min())
@@ -203,12 +201,16 @@ def start_app(user):
     filtered_df.apply_battery_filter(bat_min=min_bat, bat_max=max_bat)
     filtered_df.apply_date_filter(start=inicio, end=fim, refer_column='payloaddatetime', trigger_error=True)
     filtered_status_loc.apply_date_filter(start=inicio, end=fim, refer_column='Date')
+
     filtered_df.apply_time_filter(start_time=hora_inicio, end_time=hora_final, trigger_error=True)
     filtered_status_loc.apply_time_filter(start_time=hora_inicio, end_time=hora_final)
+
     messages_per_day = filtered_df.df.groupby(by='PLM').count().reset_index()
     messages_per_day.rename(columns={'Identifier':'Sent Messages'}, inplace=True)
+    min_messages = int(messages_per_day['Sent Messages'].min())
+    max_messages = int(messages_per_day['Sent Messages'].max())
     
-    # Agrupamentos por PLM
+    # Gráfico principal
     agrupado = filtered_df.df.groupby(by='PLM')
     relative_bov_qtd =  len(agrupado)
     bovine_chart = Bovine_plms.plot_scatter_plm(agrupado, date_period=[inicio, fim], qtd=relative_bov_qtd)
@@ -218,10 +220,11 @@ def start_app(user):
     concatenado = filtered_df.df[(filtered_df.df['PLM'].isin(agrupado_bateria['PLM'])) & (filtered_df.df['payloaddatetime'].isin(agrupado_bateria['payloaddatetime']))]
 
     c_switch, order_switch_ascending, order_switch_descending, *_, relative_bov_metric = st.columns(6, gap='small')
+    relative_bov_qtd =  len(filtered_df.df.PLM.unique())
+
+    # Configuração dos switchs
     with c_switch:
         switch = st_toggle_switch(label='See uplink and last battery figures', label_after=True, active_color='#F98800', inactive_color='#D3D3D3', track_color='#5E00F8')
-    with relative_bov_metric:
-        relative_bov_qtd =  len(filtered_df.df.PLM.unique())
     if not switch:
         st.plotly_chart(bovine_chart, use_container_width=True)
         st.markdown('---')
@@ -245,11 +248,10 @@ def start_app(user):
             status_loc_agrupado = filtered_status_loc.df.groupby(by=['Mes-Dia', 'Status']).count()['PLM']
             status_loc_agrupado.index = pd.MultiIndex.from_tuples(
             [(pd.to_datetime(date, format="%b %d, %Y"), status) for date, status in status_loc_agrupado.index])
-            colunas = status_loc_agrupado.unstack(level=1).columns
             status_loc_unstacked = status_loc_agrupado.sort_index(level=0).unstack(level=1)
             loc_status_count_chart = location_status_chart.count_location_status(status_loc_unstacked,
                                                                                   mode=chart_mode_switch, barmode=barmode.lower(),
-                                                                                  columns_to_add = colunas)
+                                                                                  columns_to_add = status_loc_unstacked.columns)
             st.plotly_chart(loc_status_count_chart, use_container_width=True)
         else:
             filtered_status_loc.apply_status_filter(options=st.session_state.status_opcs)
@@ -269,20 +271,14 @@ def start_app(user):
         elif not switch_ascending and switch_descending:
             messages_per_day.sort_values(by='Sent Messages', ascending=False, inplace=True)
             concatenado.sort_values('battery', ascending=False, inplace=True)
-        elif switch_ascending and switch_descending:
-            st.warning('Ordered by PLM number. Use only one switch')
+        elif (switch_ascending and switch_descending) or (not switch_ascending and not switch_descending):
+            st.warning('Ordered by PLM number.')
             messages_per_day.sort_values(by='PLM', ascending=True, inplace=True)
             concatenado.sort_values(by='PLM', ascending=True, inplace=True)
-        else:
-            messages_per_day.sort_values(by='PLM', ascending=True, inplace=True)
-            concatenado.sort_values(by='PLM', ascending=True, inplace=True)
-
-        min_messages = int(messages_per_day['Sent Messages'].min())
-        max_messages = int(messages_per_day['Sent Messages'].max())
 
         if len(messages_per_day) > 1:
             min_messages, max_messages = c_switch.slider(label='Messages Range', value=[min_messages, max_messages], 
-                              min_value=min_messages, max_value=max_messages)
+                                                        min_value=min_messages, max_value=max_messages)
         
         mensagens_filtrado = Filters(data_frame=messages_per_day)
         mensagens_filtrado.apply_message_filter(min_qtd=min_messages, max_qtd=max_messages)
@@ -296,7 +292,7 @@ if __name__ == '__main__':
     st.markdown(streamlit_style, unsafe_allow_html=True) 
     initialize_session_state()
     conn = start_connection()
-    if not conn is False:
+    if not conn is None:
         run_queries()
         menu1, menu2, menu3 = st.columns(3)
         with open('style.css', 'r') as f:
@@ -313,3 +309,4 @@ if __name__ == '__main__':
         else:
             with menu2:
                 st.error('Be sure your credentials are correct')
+                st_lottie(welcome, loop=True, quality='medium', width=700, height=350, speed=1)

@@ -68,7 +68,7 @@
 /* CSS */
 
 /* CSS */
-.css-1fdqkex.edgvbvh10 {
+.css-1fdqkex.edgvbvh10, .css-czbs5b {
   align-items: center;
   background-color: initial;
   background-image: linear-gradient(#464d55, #25292e);
@@ -100,21 +100,22 @@
   touch-action: manipulation;
 }
 
-.css-1fdqkex.edgvbvh10:hover {
+.css-1fdqkex.edgvbvh10:hover, .css-czbs5b:hover {
   box-shadow: rgba(0, 1, 0, .2) 0 2px 8px;
   opacity: .85;
+  color: whitesmoke;
 }
 
-.css-1fdqkex.edgvbvh10:active {
+.css-1fdqkex.edgvbvh10:active, .css-czbs5b:active {
   outline: 0;
 }
 
-.css-1fdqkex.edgvbvh10:focus {
+.css-1fdqkex.edgvbvh10:focus, .css-czbs5b:active {
   box-shadow: rgba(0, 0, 0, .5) 0 0 0 3px;
 }
 
 @media (max-width: 420px) {
-  .css-1fdqkex.edgvbvh10 {
+  .css-1fdqkex.edgvbvh10, .css-czbs5b {
     height: 48px;
   }
 }
@@ -123,4 +124,24 @@
   color:whitesmoke;
   font-family: 'Roboto', sans-serif;
   font-size: 35px;
+}
+
+.st-bt {
+  border-bottom-color: grey;
+}
+.st-bs {
+  border-top-color: grey;
+}
+.st-br {
+  border-right-color: grey;
+}
+.st-bq {
+  border-left-color: grey;
+}
+
+.css-6qob1r {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  overflow: overlay;
 }
