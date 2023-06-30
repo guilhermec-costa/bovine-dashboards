@@ -154,9 +154,9 @@ def start_app(user):
 
     # with st.form(key='filters'):
     c1_date, c2_date, c3_date, c4_date = st.columns(4)
-    inicio = c1_date.date_input(label='Start date:', max_value=datetime.datetime.now(tz=pytz.timezone('Brazil/East')), min_value=filtered_df.df['payloaddatetime'].min(),
-                        key='data_inicio', value=datetime.datetime.now(tz=pytz.timezone('Brazil/East')))
-    fim = c2_date.date_input(label='End date:', min_value=filtered_df.df['CreatedAt'].min(), max_value=filtered_df.df['payloaddatetime'].max() + timedelta(days=1),
+    inicio = c1_date.date_input(label='Start date:', min_value=filtered_df.df['payloaddatetime'].min(),
+                        key='data_inicio', value=datetime.datetime.today() - timedelta(days=1))
+    fim = c2_date.date_input(label='End date:', min_value=filtered_df.df['CreatedAt'].min(),
                     key='data_fim', value=datetime.datetime.now(tz=pytz.timezone('Brazil/East')) + datetime.timedelta(days=1))
     
     hora_inicio = c3_date.time_input(label='Start time:', value=datetime.time(0,0))
