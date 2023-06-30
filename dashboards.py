@@ -97,6 +97,7 @@ def start_app(user):
     location_status_data['Status'] = location_status_data['Status'].apply(lambda x: 'Valid location' if x else 'Invalid location')
     location_status_data['Mes-Dia'] = location_status_data['Date'].apply(lambda x: x.strftime('%b %d, %Y'))
     colunas = [x[0] for x in columns_name]
+    colunas.append('Weight')
     df = pd.DataFrame(content, columns=colunas)
     df['payloaddatetime'] = pd.to_datetime(df['payloaddatetime'], utc=True)
     df['battery'] = df['battery'].apply(lambda x: x / 1000 if x > 100 else x)
@@ -154,17 +155,15 @@ def start_app(user):
 
     # with st.form(key='filters'):
     c1_date, c2_date, c3_date, c4_date = st.columns(4)
-    inicio = c1_date.date_input(label='Start date:', min_value=filtered_df.df['payloaddatetime'].min(),
-                        key='data_inicio', value=datetime.datetime.today() - timedelta(days=1))
+    inicio = c1_date.date_input(label='Start date:', min_value=filtered_df.df['payloaddatetime'].min(), max_value=datetime.datetime.today(),
+                        key='data_inicio', value=datetime.datetime.now() - timedelta(days=2))
     fim = c2_date.date_input(label='End date:', min_value=filtered_df.df['CreatedAt'].min(),
-                    key='data_fim', value=datetime.datetime.now(tz=pytz.timezone('Brazil/East')) + datetime.timedelta(days=1))
-    
+                    key='data_fim', value=datetime.datetime.now() + datetime.timedelta(days=1))
     hora_inicio = c3_date.time_input(label='Start time:', value=datetime.time(0,0))
     hora_final = c4_date.time_input(label='End time', value=datetime.time(23, 59))
 
-    inicio = datetime.datetime.combine(inicio, datetime.datetime.min.time(), tzinfo=pytz.UTC) - timedelta(days=1)
+    inicio = datetime.datetime.combine(inicio, datetime.datetime.min.time(), tzinfo=pytz.UTC)
     fim = datetime.datetime.combine(fim, datetime.datetime.min.time(), tzinfo=pytz.UTC)
-
     c1_farm, c2_plm, c3_race = st.columns(3)
 
     farm_options = filtered_df.get_unique_options('Name')
@@ -185,10 +184,21 @@ def start_app(user):
         filtered_df.apply_plm_filter(options=plm_filter_options, refer_column='PLM')
         filtered_status_loc.apply_plm_filter(options=plm_filter_options, refer_column='PLM')
 
-    min_battery = float(filtered_df.df['battery'].min())
-    max_battery = float(filtered_df.df['battery'].max())         
-    min_bat, max_bat = st.slider(label='Battery range', value=[min_battery, max_battery], 
-                            min_value=min_battery,max_value=max_battery, step=0.05, help='Only can be applied to the battery level per bovine figure.')
+    bat_slider, weight_slider = st.columns(2, gap='large')
+    # Slider de bateria posicionado aqui para deixar o slider dinâmico após o filtro de bateria
+    relative_min_battery = float(filtered_df.df['battery'].min())
+    relative_max_battery = float(filtered_df.df['battery'].max())
+    relative_min_weight = float(filtered_df.df['Weight'].min())
+    relative_max_weight = float(filtered_df.df['Weight'].max())
+    min_bat, max_bat = bat_slider.slider(label='Battery range', value=[relative_min_battery, relative_max_battery], 
+            min_value=relative_min_battery,max_value=relative_max_battery, step=0.05, help='Only can be applied to the battery level per bovine figure.')
+
+    if relative_min_weight < relative_max_weight:
+        min_weight, max_weight = weight_slider.slider(label='Weight range', value=[relative_min_weight, relative_max_weight],
+                                                  min_value=relative_min_weight,max_value=relative_max_weight, step=25.0, help='Only can be applied to the battery level per bovine figure.')
+        filtered_df.apply_weight_filter(min_weight=min_weight, max_weight=max_weight)
+    else:
+        weight_slider.warning('MIN WEIGHT equal/greater than MAX WEIGHT')
     
     filtered_df.apply_battery_filter(bat_min=min_bat, bat_max=max_bat)
     filtered_df.apply_date_filter(start=inicio, end=fim, refer_column='payloaddatetime', trigger_error=True)
@@ -197,7 +207,7 @@ def start_app(user):
     filtered_status_loc.apply_time_filter(start_time=hora_inicio, end_time=hora_final)
     messages_per_day = filtered_df.df.groupby(by='PLM').count().reset_index()
     messages_per_day.rename(columns={'Identifier':'Sent Messages'}, inplace=True)
-
+    
     # Agrupamentos por PLM
     agrupado = filtered_df.df.groupby(by='PLM')
     relative_bov_qtd =  len(agrupado)

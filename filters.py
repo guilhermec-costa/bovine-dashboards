@@ -1,6 +1,7 @@
 import streamlit as st
 import datetime
 import pytz
+import pandas as pd
 
 style_markdown_warning = """
 color: rgb(255, 255, 194);
@@ -25,29 +26,26 @@ padding-left: 14px;
 margin: 4px;
 """
 class Filters:
-    def __init__(self, data_frame):
+    data_frame : pd.DataFrame
+    def __init__(self, data_frame: pd.DataFrame):
         self.df = data_frame
         self.c1_date, self.c2_date = st.columns(2)
-
-    # def __repr__(self):
-    #     print('Filters(data_frame)')
 
     def apply_date_filter(self, start, end, refer_column:str, trigger_error=False):
         if start <= end:
             self.df = self.df[(self.df[refer_column] >= start) & (self.df[refer_column] <= end)]
             return
         
-        default_start_date = datetime.datetime.now(tz=pytz.timezone('Brazil/East'))  - datetime.timedelta(days=1)
+        default_start_date = datetime.datetime.now(tz=pytz.timezone('Brazil/East'))  - datetime.timedelta(days=2)
         default_end_date = datetime.datetime.now(tz=pytz.timezone('Brazil/East')) + datetime.timedelta(days=1)
-        self.df = self.df[(self.df[refer_column] >= default_start_date) &
-                            (self.df[refer_column] <= default_end_date)]
+        self.df = self.df[(self.df[refer_column] >= default_start_date) & (self.df[refer_column] <= default_end_date)]
         if trigger_error:
             self.c1_date.write(f'<div style="{style_markdown_error}">There is no data. Start date set to {default_start_date.strftime("%Y-%m-%d %H:%M:%S")} and end date set to {default_end_date.strftime("%Y-%m-%d %H:%M:%S")}.</div>',
                                unsafe_allow_html=True)
             self.c2_date.write(f'<div style="{style_markdown_warning}">Verify if START DATE is greater than END DATE. </div>', unsafe_allow_html=True)
 
     def apply_time_filter(self, start_time, end_time, trigger_error=False):
-        if start_time <= end_time:
+        if start_time < end_time:
             self.df = self.df[(self.df['Time'] >= start_time) & (self.df['Time'] <= end_time)]
             return
         default_start_time = datetime.time(0,0,0)
@@ -82,6 +80,9 @@ class Filters:
 
     def apply_status_filter(self, options):
         self.df = self.df[self.df['Status'].isin(options)]
+
+    def apply_weight_filter(self, min_weight, max_weight):
+        self.df = self.df[(self.df['Weight'] >= min_weight) & (self.df['Weight'] <= max_weight)]
 
     def get_unique_options(self, refer_column):
         return self.df[refer_column].unique()

@@ -3,9 +3,9 @@ from .update_fig_elements import alter_hover, alter_legend
 
 def line_battery_chart(data):
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=data['Date'], y=data['Mean'], name='Mean battery', mode='lines+markers', ))
-    fig.add_trace(go.Scatter(x=data['Date'], y=data['Max'], name='Max battery', mode='lines+markers', ))
-    fig.add_trace(go.Scatter(x=data['Date'], y=data['Min'], name='Min battery', mode='lines+markers', ))
+    fig.add_trace(go.Scatter(x=data['Date'], y=data['Mean'], name='Mean battery', mode='lines+markers', hovertemplate='%{y}V'))
+    fig.add_trace(go.Scatter(x=data['Date'], y=data['Max'], name='Max battery', mode='lines+markers', hovertemplate='%{y}V'))
+    fig.add_trace(go.Scatter(x=data['Date'], y=data['Min'], name='Min battery', mode='lines+markers', hovertemplate='%{y}V'))
 
     fig.update_layout(title=dict(text='Battery perfomance last 30 days', x=0.5, y=0.9, yanchor='top', xanchor='center', font=dict(size=25, family='roboto')),
                       template='presentation', height=400, font_family='roboto')

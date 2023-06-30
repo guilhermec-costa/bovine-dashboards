@@ -1,5 +1,7 @@
 QUERY_BOVINE_DASHBOARD = """
-SELECT * FROM public."bovinedashboards2v"
+SELECT bd.*, b."Weight" FROM public."bovinedashboards2v" bd
+JOIN "Bovines" b
+	ON b."Id" = bd."BovineId"
 """
 
 COLUMNS_TO_DATAFRAME = """

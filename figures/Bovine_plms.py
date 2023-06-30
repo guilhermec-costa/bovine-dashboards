@@ -1,5 +1,6 @@
 import plotly.graph_objects as go
 from .update_fig_elements import alter_hover, alter_legend
+import numpy as np
 
 def plot_scatter_plm(data, date_period, qtd):
     fig = go.Figure()
@@ -9,7 +10,9 @@ def plot_scatter_plm(data, date_period, qtd):
         fig.add_trace(go.Scatter(x=groups['payloaddatetime'], y=groups['battery'], 
                             mode="markers+lines", line_shape='spline', name=name, hovertemplate= f'<i>PLM: {name}</i>' + 
                                                                                                 '<br>Date: %{x}</br>' + 
-                                                                                                '<i>Battery: %{y}</i>')
+                                                                                                '<i>Battery: %{y}<i>' +
+                                                                                                f'<br>Weight: {np.mean(groups["Weight"])} Kg</br>' +
+                                                                                                f'<i>Race: {groups["race_name"].unique()[0]}</i>')
                 )
     
     start_day, end_day = [date_period[0].day, date_period[1].day]
