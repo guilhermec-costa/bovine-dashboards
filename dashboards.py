@@ -211,8 +211,11 @@ def start_app(user):
 
     messages_per_day = filtered_df.df.groupby(by='PLM').count().reset_index()
     messages_per_day.rename(columns={'Identifier':'Sent Messages'}, inplace=True)
-    min_messages = int(messages_per_day['Sent Messages'].min())
-    max_messages = int(messages_per_day['Sent Messages'].max())
+    if messages_per_day.shape[0] > 1:
+        min_messages = int(messages_per_day['Sent Messages'].min())
+        max_messages = int(messages_per_day['Sent Messages'].max())
+    else:
+        min_messages, max_messages = [0, 0]
     
     # Gráfico principal
     agrupado = filtered_df.df.groupby(by='PLM')
