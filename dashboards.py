@@ -46,20 +46,24 @@ def run_query(query):
         cursor.execute(query)
         return cursor.fetchall()
 
+recent_metrics = []
 def run_queries():
-    global content, bovine_per_farm, bovine_per_race, battery_mean_last24hours, battery_mean_last48hours, battery_metrics_30days, \
-    columns_name, bovine_registers, battery_mean_last24hours, battery_mean_last_month, diff_last_day, last_battery_data, volts_categories, location_status_data
+    global content, bovine_per_farm, bovine_per_race, battery_mean_last48hours, battery_metrics_30days, recent_metrics, \
+    columns_name, bovine_registers, battery_mean_last24hours, battery_mean_last_month, last_battery_data, volts_categories, location_status_data
     content = run_query(bovn_q.QUERY_BOVINE_DASHBOARD)
     columns_name = run_query(bovn_q.COLUMNS_TO_DATAFRAME)
     bovine_registers = run_query(bovn_q.BOVINE_NUMBER)[0][0]
     battery_mean_last_month = float(run_query(bovn_q.BATTERY_MEAN_LAST_30DAYS)[0][0])
-    battery_mean_last24hours = float(run_query(bovn_q.BATTERY_MEAN_LAST_24HOURS)[0][0])
-    battery_mean_last48hours = float(run_query(bovn_q.BATTERY_MEAN_LAST_48HOURS)[0][0])
+    battery_mean_last24hours = run_query(bovn_q.BATTERY_MEAN_LAST_24HOURS)[0][0]
+    battery_mean_last48hours = run_query(bovn_q.BATTERY_MEAN_LAST_48HOURS)[0][0]
+    recent_metrics.append([battery_mean_last24hours, battery_mean_last48hours])
+    recent_metrics = list(map(lambda x: float(x) if x is not None else 'No information', recent_metrics[0]))
     bovine_per_farm = pd.DataFrame(run_query(bovn_q.BOVINE_PER_FARM), columns=['Farm_name', 'Qtd'])
     bovine_per_race = pd.DataFrame(run_query(bovn_q.BOVINE_PER_RACE), columns=['Race_name', 'Qtd'])
     last_battery_data = pd.DataFrame(run_query(bovn_q.LAST_BATTERY_QUERY), columns=['PLM', 'payloaddatetime', 'battery'])
     battery_metrics_30days = pd.DataFrame(run_query(bovn_q.BATTERY_METRICS_30DAYS), columns=['Date', 'Mean', 'Max', 'Min'])
-    diff_last_day = round(battery_mean_last24hours - battery_mean_last48hours, 2)
+    if None not in (battery_mean_last24hours, battery_mean_last48hours):
+        diff_last_day = round(battery_mean_last24hours - battery_mean_last48hours, 2)
     volts_categories = pd.DataFrame(run_query(bovn_q.BATTERY_CATEGORIES), columns=['Category', 'Quantity'])
     location_status_data = pd.DataFrame(run_query(bovn_q.LOCATION_STATUS), columns=['PLM', 'Status', 'Date', 'race_Name', 'farm_name'])
 
@@ -119,7 +123,7 @@ def start_app(user):
     # Exibindo as métricas
     metric1, metric2, metric3, *_ = st.columns(4, gap='medium')
     metric1.metric(label='Active bovines', value=bovine_registers, delta=f'{total_weight} Kg')
-    metric2.metric(label='last 24 hours battery perfomance', value=f'{battery_mean_last24hours}V', delta=diff_last_day,
+    metric2.metric(label='last 24 hours battery perfomance', value=f'{recent_metrics[0]}',
                     help='last 24 hours battery performance in comparison with the 48 last hours battery perfomance')
     metric3.metric(label='Medium battery on last 30 days', value=f'{battery_mean_last_month}V')
     
@@ -207,8 +211,11 @@ def start_app(user):
 
     messages_per_day = filtered_df.df.groupby(by='PLM').count().reset_index()
     messages_per_day.rename(columns={'Identifier':'Sent Messages'}, inplace=True)
-    min_messages = int(messages_per_day['Sent Messages'].min())
-    max_messages = int(messages_per_day['Sent Messages'].max())
+    if messages_per_day.shape[0] > 1:
+        min_messages = int(messages_per_day['Sent Messages'].min())
+        max_messages = int(messages_per_day['Sent Messages'].max())
+    else:
+        min_messages, max_messages = [0, 0]
     
     # Gráfico principal
     agrupado = filtered_df.df.groupby(by='PLM')
