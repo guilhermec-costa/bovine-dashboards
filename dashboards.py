@@ -76,8 +76,8 @@ def initialize_session_state():
     if 'apply_filters_button' not in st.session_state:
         st.session_state.apply_filters_button = False
 
+
 def start_app(user):
-    st.session_state.logout = False
 
     with st.sidebar:
         st.markdown('---')
@@ -288,7 +288,7 @@ def start_app(user):
         st.plotly_chart(last_bat, use_container_width=True)
 
 if __name__ == '__main__':
-    st.set_page_config(layout='wide', page_title='Dashboards SpaceVis', initial_sidebar_state='collapsed', page_icon=':bar_chart:')
+    st.set_page_config(layout='wide', page_title='Dashboards SpaceVis', page_icon=':bar_chart:')
     st.markdown(streamlit_style, unsafe_allow_html=True) 
     initialize_session_state()
     conn = start_connection()
