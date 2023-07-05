@@ -27,12 +27,18 @@ margin: 4px;
 """
 
 class Filters:
-    data_frame : pd.DataFrame
-    def __init__(self, data_frame: pd.DataFrame):
+
+    def __init__(self, data_frame) -> None:
         self.df = data_frame
         self.c1_date, self.c2_date = st.columns(2)
+    
+    def validate_filter(self, filter_name, opcs=None, refer_column=None):
+        apply_filter = getattr(self, filter_name)
+        if len(opcs) >= 1: 
+            filtered_dataframe = apply_filter(opcs, refer_column)
 
-    def apply_date_filter(self, start, end, refer_column:str, trigger_error=False):
+    def apply_date_filter(self, start: datetime.datetime, end: datetime.datetime, refer_column:str, trigger_error: bool = False) -> None:
+        end = end + datetime.timedelta(hours=23, minutes=59, seconds=59, microseconds=59)
         if start <= end:
             self.df = self.df[(self.df[refer_column] >= start) & (self.df[refer_column] <= end)]
             return
@@ -67,8 +73,8 @@ class Filters:
     def apply_deveui_filter(self, options, refer_column):
         self.df = self.df[self.df[refer_column].isin(options)]
     
-    def apply_battery_filter(self, bat_min, bat_max):
-        self.df = self.df[(self.df.battery >= bat_min) & (self.df.battery <= bat_max)]
+    def apply_battery_filter(self, bat_min, bat_max, refer_column: str):
+        self.df = self.df[(self.df[refer_column] >= bat_min) & (self.df[refer_column] <= bat_max)]
     
     def apply_race_filter(self, options, refer_column):
         self.df = self.df[self.df[refer_column].isin(options)]
@@ -82,27 +88,3 @@ class Filters:
     def apply_weight_filter(self, min_weight, max_weight):
         self.df = self.df[(self.df['Weight'] >= min_weight) & (self.df['Weight'] <= max_weight)]
     
-# class DateFilters(Filters):
-#     def __init__(self, data_frame):
-#         super().__init__(data_frame)
-
-#     @classmethod
-#     def apply_date_filter(self, start, end, refer_column:str, trigger_error=False):
-#         if start <= end:
-#             self.df = self.df[(self.df[refer_column] >= start) & (self.df[refer_column] <= end)]
-#             return
-        
-#         default_start_date = datetime.datetime.now(tz=pytz.timezone('Brazil/East'))  - datetime.timedelta(days=1)
-#         default_end_date = datetime.datetime.now(tz=pytz.timezone('Brazil/East')) + datetime.timedelta(days=1)
-#         self.df = self.df[(self.df[refer_column] >= default_start_date) &
-#                             (self.df[refer_column] <= default_end_date)]
-#         if trigger_error:
-#             self.c1_date.write(f'<div style="{style_markdown_error}">There is no data. Start date set to {default_start_date.strftime("%Y-%m-%d %H:%M:%S")} and end date set to {default_end_date.strftime("%Y-%m-%d %H:%M:%S")}.</div>',
-#                                unsafe_allow_html=True)
-#             self.c2_date.write(f'<div style="{style_markdown_warning}">Verify if START DATE is greater than END DATE. </div>', unsafe_allow_html=True)
-
-#     def search_dataframes():
-#         return Filters.return_data_frame()
-    
-#     def show_dataframes(self):
-#         st.write(self.df)

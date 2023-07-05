@@ -2,13 +2,13 @@ import plotly.graph_objects as go
 from .update_fig_elements import alter_hover, alter_legend
 import numpy as np
 
-def plot_scatter_plm(data, date_period, qtd):
+def plot_scatter_plm(data, date_period, qtd, id_kind):
     fig = go.Figure()
     for name, groups in data:
         groups.sort_values(by='payloaddatetime', inplace=True)
         groups = groups[groups['payloaddatetime'].dt.month > 4]
         fig.add_trace(go.Scatter(x=groups['payloaddatetime'], y=groups['battery'], 
-                            mode="markers+lines", line_shape='spline', name=name, hovertemplate= f'<i>PLM: {name}</i>' + 
+                            mode="markers+lines", line_shape='spline', name=name, hovertemplate= f'<i>{id_kind}: {name}</i>' + 
                                                                                                 '<br>Date: %{x}</br>' + 
                                                                                                 '<i>Battery: %{y}<i>' +
                                                                                                 f'<br>Weight: {np.mean(groups["Weight"])} Kg</br>' +
@@ -28,7 +28,7 @@ def plot_scatter_plm(data, date_period, qtd):
     fig.update_xaxes(tickfont=dict(size=16, family='roboto'), showgrid=True, griddash='dash')
 
     # alterando o design do cursor e da legenda
-    alter_legend(fig=fig, title='PLM')
+    alter_legend(fig=fig, title=id_kind)
     alter_hover(fig=fig)
 
     return fig

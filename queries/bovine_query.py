@@ -10,13 +10,34 @@ FROM information_schema.columns
 WHERE table_schema = 'public' AND table_name = 'bovinedashboards2v';
 """
 
+LAST_LOCATION = """
+SELECT et."Identifier", et."PLM", r."Name", st_x(bovH."Location") latitude, st_y(bovH."Location") longitude, f."Name", 
+bovH."CreatedAt", last_battery.battery
+FROM public."Eartags" et
+LEFT JOIN "BovineHistories" bovH
+	ON et."BovineId" = bovH."BovineId"
+LEFT JOIN "Farms" f
+	ON f."Id" = et."FarmId"
+LEFT JOIN "Bovines" bov
+	ON bov."Id" = et."BovineId"
+LEFT JOIN "Races" r
+	ON bov."RaceId" = r."Id"
+LEFT JOIN
+	(SELECT "PLM", coalesce(nullif(max("Level"), 0), 0) battery FROM public."Eartags" et2
+	LEFT JOIN "BatteryHistories" batH
+		ON batH."BovineId" = et2."BovineId"
+	GROUP BY "PLM") last_battery
+		ON last_battery."PLM" = et."PLM"
+ORDER BY bovH."CreatedAt" DESC;
+"""
+
 BOVINE_NUMBER = """
 SELECT count(*) FROM public."Eartags"
 """
 
 BATTERY_MEAN_LAST_30DAYS = """
 SELECT round(avg(battery)::numeric, 3) FROM public."bovinedashboards2v" bov
-WHERE payloaddatetime BETWEEN (current_date - interval '30' day) AND current_date
+WHERE payloaddatetime BETWEEN (current_date - interval '30' day) AND current_date + interval '1' day;
 """
 
 BATTERY_MEAN_LAST_60DAYS = """
@@ -26,7 +47,7 @@ WHERE payloaddatetime BETWEEN (current_date - interval '2' month) AND (current_d
 
 BATTERY_MEAN_LAST_24HOURS = """
 SELECT round(avg(battery::numeric), 3) FROM public."bovinedashboards2v" bov
-WHERE payloaddatetime BETWEEN (current_date - interval '1' day) AND current_date
+WHERE payloaddatetime BETWEEN (current_date - interval '1' day) AND current_date + interval '1' day;
 """
 
 BATTERY_MEAN_LAST_48HOURS = """
@@ -95,7 +116,7 @@ GROUP BY battery_indice;
 """
 
 LOCATION_STATUS = """
-SELECT ea."PLM", "LocationStatus", "Date", r."Name", f."Name"  FROM public."BovineHistories" bh
+SELECT ea."PLM", ea."Identifier", "LocationStatus", "Date", r."Name", f."Name"  FROM public."BovineHistories" bh
 LEFT JOIN "Eartags" ea ON
 	bh."BovineId" = ea."BovineId"
 JOIN "Farms" f ON
