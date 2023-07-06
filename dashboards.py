@@ -17,7 +17,10 @@ from streamlit_lottie import st_lottie
 import constructors
 from queries.queries_runner import Queries
 from queries.queries_constants import queries_constants
-import plotly.express as px
+from zipfile import ZipFile
+import os
+from pathlib import Path
+from downloads_handler import manage_downloads
 
 streamlit_style = """
     <style>
@@ -46,6 +49,8 @@ def initialize_session_state():
         st.session_state.logout = False
     if 'apply_filters_button' not in st.session_state:
         st.session_state.apply_filters_button = False
+    if 'download_zip' not in st.session_state:
+        st.session_state.download_zip = False
 
 
 def start_app(user, queries_results):
@@ -123,11 +128,6 @@ def start_app(user, queries_results):
     
     battery_expander.build_expander()
     general_metrics.build_expander()
-
-
-    *_, download_btn = st.columns(12, gap='small')
-    download_btn.download_button(label='Download data', data=df.to_csv(), file_name=f'bovine_data_{datetime.datetime.now()}',
-                                            mime='text/csv', key='download_btn', use_container_width=True)
     
     # Estilização da tabela principal
     # vw_tab_aggrid = GridBuilder(df, key='filtered_df.df')
@@ -138,7 +138,6 @@ def start_app(user, queries_results):
     filtered_df = Filters(data_frame=df)
     filtered_status_loc = Filters(data_frame=location_status_data)
     filtered_last_location = Filters(data_frame=last_location)
-    st.write(filtered_df.df, filtered_status_loc.df, filtered_last_location.df)
 
     filtered_status_loc.df['Date'] = pd.to_datetime(filtered_status_loc.df.Date, errors='ignore')
     filtered_status_loc.df['Time'] = filtered_status_loc.df['Date'].apply(lambda x: x.time())
@@ -200,6 +199,34 @@ def start_app(user, queries_results):
     filtered_df.apply_time_filter(start_time=hora_inicio, end_time=hora_final, trigger_error=True)
     filtered_status_loc.apply_time_filter(start_time=hora_inicio, end_time=hora_final)
     filtered_last_location.apply_time_filter(start_time=hora_inicio, end_time=hora_final)
+
+    download_status = []
+    with st.expander('Download filtered data'):
+        main_data = st.checkbox('Include battery historic dataset', value=False, key='main_data')
+        last_location_status_data = st.checkbox('Include last location status dataset', value=False, key='last_location_data')
+        last_location_position_data = st.checkbox('Include last location dataset', value=False, key='last_location_position_data')
+        gen_zip, download_zip, *_ = st.columns(10)
+        generate_zip = gen_zip.button('Generate zipfile', key='zip_file', type='primary')
+        download_status = manage_downloads(status_list=[('bovine_battery_historic', main_data, filtered_df), ('last_location_status', last_location_status_data, filtered_status_loc),
+                                                        ('last_location_position_latlong', last_location_position_data, filtered_last_location)])
+        if generate_zip:
+            generated_time = datetime.datetime.now(tz=pytz.timezone('Brazil/East')).strftime(f'%Y-%b-%d_%Hh_%Mm_%Ss')
+            zip_name = f'bovine_dash-{generated_time}.zip'
+
+            with st.spinner('Generating zip file...'):
+                with ZipFile(zip_name, 'w') as zip_file:
+                    for download in download_status:
+                        for key, value in download[0].items():
+                            if value:
+                                arquivo_csv = download[1].df.to_csv(f'{key}.csv', sep=';')
+                                zip_object = zip_file.write(f'{key}.csv')
+                                Path.unlink(f'{key}.csv')
+
+            with open(zip_name, 'rb') as zip_file_readed:
+                zip_to_download = zip_file_readed.read()
+            download_zip = download_zip.download_button('Download zip file', data=zip_to_download, file_name=zip_name, mime='application/zip')
+            Path.unlink(zip_name)
+
 
     messages_per_day = filtered_df.df.groupby(by='PLM').count().reset_index()
     messages_per_day.rename(columns={'Deveui':'Sent Messages'}, inplace=True)
@@ -308,9 +335,10 @@ def start_app(user, queries_results):
             fig_invalidos = location_status_count_chart.invalid_status_count(contagem_loc_invalida_agrupado)
             st.plotly_chart(fig_invalidos, use_container_width=True)
     
-    theme_options = ['satellite-streets', 'open-street-map', 'carto-positron', 'carto-darkmatter', 'stamen-terrain', 'stamen-toner',
-                        'stamen-watercolor', 'basic', 'streets', 'outdoors', 'light', 'dark', 'white-bg', 'satellite']
-    choosed_theme = st.selectbox('Choose any theme', options=theme_options, index=0)
+    theme_position, *_ = st.columns(5)
+    theme_options = ['satellite', 'satellite-streets', 'carto-positron', 'carto-darkmatter', 'dark', 'open-street-map', 'streets', 'stamen-terrain', 'stamen-toner',
+                        'stamen-watercolor', 'basic', 'outdoors', 'light', 'white-bg']
+    choosed_theme = theme_position.selectbox('Choose any theme', options=theme_options, index=0)
     last_location_chart = last_location_map.mapbox_last_location(last_location_grouped, theme=choosed_theme, ident = identifier_options)
     st.plotly_chart(last_location_chart, use_container_width=True)
 

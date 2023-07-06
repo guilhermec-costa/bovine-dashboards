@@ -14,7 +14,7 @@
   font-size: 40px;
   justify-content: center;
   line-height: 1em;
-  max-width: 100%;
+  width: fit-content;
   min-width: 120px;
   padding: 3px;
   text-decoration: none;
@@ -68,7 +68,7 @@
 /* CSS */
 
 /* CSS */
-.css-1fdqkex.edgvbvh10, .css-czbs5b {
+.css-1qn602h, .css-czbs5b {
   align-items: center;
   background-color: initial;
   background-image: linear-gradient(#464d55, #25292e);
