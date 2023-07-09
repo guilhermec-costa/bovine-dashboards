@@ -147,14 +147,12 @@ def start_app(user, queries_results):
     filtered_df.df['Time'] = filtered_df.df['payloaddatetime'].apply(lambda x: x.time())
     filtered_df.df['CreatedAt'] = pd.to_datetime(filtered_df.df.CreatedAt)
 
-    c1_date, c2_date, c3_date, c4_date = st.columns(4)
+    c1_date, c2_date = st.columns(2)
     inicio = c1_date.date_input(label='Start date:', min_value=filtered_df.df['payloaddatetime'].min(), max_value=datetime.datetime.today(),
                         key='data_inicio', value=datetime.datetime.now() - datetime.timedelta(days=1))
     fim = c2_date.date_input(label='End date:', min_value=filtered_df.df['CreatedAt'].min(),
                     key='data_fim', value=datetime.datetime.now())
     
-    hora_inicio = c3_date.time_input(label='Start time:', value=datetime.time(0,0))
-    hora_final = c4_date.time_input(label='End time', value=datetime.time(23, 59))
 
     inicio = datetime.datetime.combine(inicio, datetime.datetime.min.time(), tzinfo=pytz.UTC)
     fim = datetime.datetime.combine(fim, datetime.datetime.min.time(), tzinfo=pytz.UTC)
@@ -196,10 +194,6 @@ def start_app(user, queries_results):
     filtered_df.apply_date_filter(start=inicio, end=fim, refer_column='payloaddatetime', trigger_error=True)
     filtered_status_loc.apply_date_filter(start=inicio, end=fim, refer_column='Date')
     filtered_last_location.apply_date_filter(start=inicio, end=fim, refer_column='Date')
-
-    filtered_df.apply_time_filter(start_time=hora_inicio, end_time=hora_final, trigger_error=True)
-    filtered_status_loc.apply_time_filter(start_time=hora_inicio, end_time=hora_final)
-    filtered_last_location.apply_time_filter(start_time=hora_inicio, end_time=hora_final)
 
     download_status = []
     with st.expander('Download filtered data'):
