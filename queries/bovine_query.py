@@ -55,12 +55,14 @@ WHERE payloaddatetime BETWEEN (current_date - interval '2' month) AND (current_d
 
 BATTERY_MEAN_LAST_24HOURS = """
 SELECT round(avg(battery::numeric), 3) FROM public."bovinedashboards2v" bov
-WHERE payloaddatetime BETWEEN (current_date - interval '1' day) AND current_date + interval '1' day;
+WHERE payloaddatetime BETWEEN (now() AT TIME ZONE 'Brazil/East' - interval '24' hour)
+	AND now() AT TIME ZONE 'Brazil/East';
 """
 
 BATTERY_MEAN_LAST_48HOURS = """
 SELECT round(avg(battery::numeric), 3) FROM public."bovinedashboards2v" bov
-WHERE payloaddatetime BETWEEN (current_date - interval '2' day) AND (current_date - interval '1' day)
+WHERE payloaddatetime BETWEEN (now() AT TIME ZONE 'Brazil/East' - interval '48' hour)
+	AND now() AT TIME ZONE 'Brazil/East';
 """
 
 BOVINE_PER_FARM = """
@@ -76,7 +78,7 @@ GROUP BY race_name;
 BATTERY_METRICS_30DAYS = """
 SELECT DISTINCT payloaddatetime::date, round(avg("battery"::numeric), 2), round(max("battery"::numeric),2), round(min("battery"::numeric),2)
 FROM public."bovinedashboards2v"
-WHERE payloaddatetime BETWEEN (current_date - interval '1' month) AND current_date
+WHERE payloaddatetime BETWEEN (current_date - interval '1' month) AND current_date + interval '1' day
 GROUP BY payloaddatetime::date
 ORDER BY payloaddatetime::date
 """

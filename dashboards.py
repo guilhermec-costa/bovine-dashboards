@@ -69,7 +69,7 @@ def start_app(user, queries_results):
     battery_mean_last48hours = float(queries_results.get('BATTERY_MEAN_LAST_48HOURS')[0][0])
     recent_metrics.append([battery_mean_last24hours, battery_mean_last48hours])
     recent_metrics = list(map(lambda x: f'{float(x)}V' if x is not None else 'No information', recent_metrics[0]))
-    if 'No information' not in (recent_metrics): diff_last_day = round(battery_mean_last24hours - battery_mean_last48hours, 2)
+    if 'No information' not in (recent_metrics): diff_last_day = round(battery_mean_last24hours - battery_mean_last48hours, 4)
     else: diff_last_day = None
     last_location = pd.DataFrame(queries_results.get('LAST_LOCATION'), columns=['Deveui', 'PLM', 'race_name', 'Longitude', 'Latitude', 'Name', 'Date', 'battery'])
     last_location.dropna(axis=0, subset=['Date'], inplace=True)
@@ -344,7 +344,6 @@ def start_app(user, queries_results):
     theme_options = ['satellite', 'satellite-streets', 'carto-positron', 'carto-darkmatter', 'dark', 'open-street-map', 'streets', 'stamen-terrain', 'stamen-toner',
                         'stamen-watercolor', 'basic', 'outdoors', 'light', 'white-bg']
     choosed_theme = theme_position.selectbox('Choose any theme', options=theme_options, index=0)
-    st.write(last_location_grouped)
     last_location_chart = last_location_map.mapbox_last_location(last_location_grouped, theme=choosed_theme, ident = identifier_options)
     st.plotly_chart(last_location_chart, use_container_width=True)
 
