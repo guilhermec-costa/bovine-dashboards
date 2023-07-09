@@ -148,9 +148,9 @@ def start_app(user, queries_results):
 
     c1_date, c2_date, c3_date, c4_date = st.columns(4)
     inicio = c1_date.date_input(label='Start date:', min_value=filtered_df.df['payloaddatetime'].min(), max_value=datetime.datetime.today(),
-                        key='data_inicio', value=datetime.datetime.now() - datetime.timedelta(days=2))
+                        key='data_inicio', value=datetime.datetime.now() - datetime.timedelta(days=1))
     fim = c2_date.date_input(label='End date:', min_value=filtered_df.df['CreatedAt'].min(),
-                    key='data_fim', value=datetime.datetime.now() + datetime.timedelta(days=1))
+                    key='data_fim', value=datetime.datetime.now())
     
     hora_inicio = c3_date.time_input(label='Start time:', value=datetime.time(0,0))
     hora_final = c4_date.time_input(label='End time', value=datetime.time(23, 59))
@@ -238,7 +238,7 @@ def start_app(user, queries_results):
     
     # Gráfico principal
     agrupado = filtered_df.df.groupby(by=identifier_options)
-    last_location_grouped = filtered_last_location.df.groupby(by='PLM').max().reset_index()
+    last_location_grouped = filtered_last_location.df.groupby(by='PLM').agg({'Date':'max'}).reset_index().merge(filtered_last_location.df, on=['PLM', 'Date'])
     relative_bov_qtd =  len(agrupado)
     bovine_chart = Bovine_plms.plot_scatter_plm(agrupado, date_period=[inicio, fim], qtd=relative_bov_qtd, id_kind=identifier_options)
 
@@ -285,6 +285,12 @@ def start_app(user, queries_results):
         st.plotly_chart(messages_chart, use_container_width=True)
         st.plotly_chart(last_bat, use_container_width=True)
 
+    col_status, *_ = st.columns(9)
+    status_opcs = col_status.multiselect('Status filters', options=['Valid location', 'Invalid location'])
+    if len(status_opcs) >= 1:
+        filtered_status_loc.apply_status_filter(options=status_opcs)
+        st.session_state.status_opcs = status_opcs
+
     status_loc_agrupado = filtered_status_loc.df.groupby(by=['Mes-Dia', 'Status']).count()['PLM']
     status_loc_agrupado.index = pd.MultiIndex.from_tuples(
     [(pd.to_datetime(date, format="%b %d, %Y"), status) for date, status in status_loc_agrupado.index])
@@ -308,9 +314,7 @@ def start_app(user, queries_results):
                         barmode = barmode_widget.selectbox('Choose a barmode:', options=['Group', 'Stack'], index=0)
 
                     if st.form_submit_button('Apply filters'):
-                        if len(status_opcs) >= 1:
-                            filtered_status_loc.apply_status_filter(options=status_opcs)
-                            st.session_state.status_opcs = status_opcs
+                        pass
 
             status_loc_unstacked = status_loc_agrupado.sort_index(level=0).unstack(level=1)
             loc_status_count_chart = location_status_chart.count_location_status(status_loc_unstacked,
@@ -341,6 +345,7 @@ def start_app(user, queries_results):
     choosed_theme = theme_position.selectbox('Choose any theme', options=theme_options, index=0)
     last_location_chart = last_location_map.mapbox_last_location(last_location_grouped, theme=choosed_theme, ident = identifier_options)
     st.plotly_chart(last_location_chart, use_container_width=True)
+
 
 if __name__ == '__main__':
     st.set_page_config(layout='wide', page_title='Dashboards SpaceVis', page_icon=':bar_chart:', initial_sidebar_state='collapsed')
