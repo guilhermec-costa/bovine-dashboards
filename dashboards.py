@@ -225,7 +225,7 @@ def start_app(user, queries_results):
 
     messages_per_day = filtered_df.df.groupby(by='PLM').count().reset_index()
     messages_per_day.rename(columns={'Deveui':'Sent Messages'}, inplace=True)
-    if messages_per_day.shape[0] > 1:
+    if messages_per_day.shape[0] >= 1:
         min_messages = int(messages_per_day['Sent Messages'].min())
         max_messages = int(messages_per_day['Sent Messages'].max())
     else:
@@ -269,7 +269,7 @@ def start_app(user, queries_results):
             messages_per_day.sort_values(by='PLM', ascending=True, inplace=True)
             concatenado.sort_values(by='PLM', ascending=True, inplace=True)
 
-        if len(messages_per_day) > 1:
+        if len(messages_per_day) > 1 and min_messages != max_messages:
             min_messages, max_messages = c_switch.slider(label='Messages Range', value=[min_messages, max_messages], 
                                                         min_value=min_messages, max_value=max_messages)
         
