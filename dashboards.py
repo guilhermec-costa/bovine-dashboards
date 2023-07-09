@@ -74,6 +74,7 @@ def start_app(user, queries_results):
     last_location = pd.DataFrame(queries_results.get('LAST_LOCATION'), columns=['Deveui', 'PLM', 'race_name', 'Longitude', 'Latitude', 'Name', 'Date', 'battery'])
     last_location.dropna(axis=0, subset=['Date'], inplace=True)
     last_location.sort_values(by='Date', ascending=False, inplace=True)
+    last_location['battery'] = last_location['battery'].astype(float)
 
     with st.sidebar:
         st.markdown('---')
@@ -343,6 +344,7 @@ def start_app(user, queries_results):
     theme_options = ['satellite', 'satellite-streets', 'carto-positron', 'carto-darkmatter', 'dark', 'open-street-map', 'streets', 'stamen-terrain', 'stamen-toner',
                         'stamen-watercolor', 'basic', 'outdoors', 'light', 'white-bg']
     choosed_theme = theme_position.selectbox('Choose any theme', options=theme_options, index=0)
+    st.write(last_location_grouped)
     last_location_chart = last_location_map.mapbox_last_location(last_location_grouped, theme=choosed_theme, ident = identifier_options)
     st.plotly_chart(last_location_chart, use_container_width=True)
 

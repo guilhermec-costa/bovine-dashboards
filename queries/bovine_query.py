@@ -12,7 +12,7 @@ WHERE table_schema = 'public' AND table_name = 'bovinedashboards2v';
 
 LAST_LOCATION = """
 SELECT et."Identifier", et."PLM", r."Name", st_x(bovH."Location") latitude, st_y(bovH."Location") longitude, f."Name", 
-bovH."CreatedAt", last_battery.battery
+bovH."CreatedAt", last_battery."battery"
 FROM public."Eartags" et
 LEFT JOIN "BovineHistories" bovH
 	ON et."BovineId" = bovH."BovineId"
@@ -23,10 +23,18 @@ LEFT JOIN "Bovines" bov
 LEFT JOIN "Races" r
 	ON bov."RaceId" = r."Id"
 LEFT JOIN
-	(SELECT "PLM", coalesce(nullif(max("Level"), 0), 0) battery FROM public."Eartags" et2
-	LEFT JOIN "BatteryHistories" batH
-		ON batH."BovineId" = et2."BovineId"
-	GROUP BY "PLM") last_battery
+		(SELECT bv_dash1."PLM", bv_dash1.payloaddatetime, round(bv_dash2.battery::numeric, 3) battery
+	FROM "eartag-ioda-prod".public.bovinedashboards2v bv_dash1
+	JOIN (
+		SELECT bv_dash2."PLM", bv_dash2.payloaddatetime, bv_dash2.battery
+		FROM "eartag-ioda-prod".public.bovinedashboards2v bv_dash2
+	) bv_dash2 ON bv_dash1."PLM" = bv_dash2."PLM" AND bv_dash1.payloaddatetime = bv_dash2.payloaddatetime
+	WHERE bv_dash1.payloaddatetime = (
+		SELECT max(payloaddatetime)
+		FROM "eartag-ioda-prod".public.bovinedashboards2v
+		WHERE "PLM" = bv_dash1."PLM"
+	)
+	ORDER BY bv_dash1.payloaddatetime DESC) last_battery
 		ON last_battery."PLM" = et."PLM"
 ORDER BY bovH."CreatedAt" DESC;
 """
