@@ -5,7 +5,8 @@ import psycopg2 as pgsql
 from grid_builder import GridBuilder
 from filters import Filters
 from figures import (Bovine_plms, last_location_map, pie_chart_farm, pie_chart_race, battery_30days, location_status_chart,
-                    messages_a_day, last_battery_chart_fig, battery_categories, pie_chart_messages, location_status_count_chart)
+                    messages_a_day, last_battery_chart_fig, battery_categories, pie_chart_messages, location_status_count_chart,
+                    boxplot_battery)
 from data_treatement.data_dealer import *
 from streamlit_extras.metric_cards import style_metric_cards
 from authenticator import login_authenticator
@@ -238,6 +239,12 @@ def start_app(user, queries_results):
     
     # Gráfico principal
     agrupado = filtered_df.df.groupby(by=identifier_options)
+    boxplot_data = filtered_df.df[['PLM', 'battery', 'payloaddatetime']].copy()
+    boxplot_data['payloaddatetime'] = boxplot_data['payloaddatetime'].dt.date
+    st.write(boxplot_data)
+    fig_boxplot = boxplot_battery.boxplot_battery(boxplot_data)
+    st.write(boxplot_data['battery'].describe())
+    st.plotly_chart(fig_boxplot, use_container_width=True)
     last_location_grouped = filtered_last_location.df.groupby(by='PLM').max().reset_index()
     relative_bov_qtd =  len(agrupado)
     bovine_chart = Bovine_plms.plot_scatter_plm(agrupado, date_period=[inicio, fim], qtd=relative_bov_qtd, id_kind=identifier_options)
