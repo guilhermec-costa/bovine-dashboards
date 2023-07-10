@@ -38,7 +38,7 @@ class Filters:
             filtered_dataframe = apply_filter(opcs, refer_column)
 
     def apply_date_filter(self, start: datetime.datetime, end: datetime.datetime, refer_column:str, trigger_error: bool = False) -> None:
-        end = end + datetime.timedelta(hours=23, minutes=59, seconds=59, microseconds=59)
+        end += datetime.timedelta(hours=23, minutes=59, seconds=59, microseconds=59)
         if start <= end:
             self.df = self.df[(self.df[refer_column] >= start) & (self.df[refer_column] <= end)]
             return

@@ -50,7 +50,7 @@
     min-width: 175px;
   }
 }
-.css-6qob1r .css-czbs5b {
+.css-6qob1r .css-p48j5d {
   position: relative;
   bottom: 100%;
   width: 25%;
@@ -68,7 +68,7 @@
 /* CSS */
 
 /* CSS */
-.css-1qn602h, .css-czbs5b {
+.css-1qn602h, .css-p48j5d {
   align-items: center;
   background-color: initial;
   background-image: linear-gradient(#464d55, #25292e);
@@ -101,22 +101,22 @@
   touch-action: manipulation;
 }
 
-.css-1fdqkex.edgvbvh10:hover, .css-czbs5b:hover {
+.css-1fdqkex.edgvbvh10:hover, .css-p48j5d:hover {
   box-shadow: rgba(0, 1, 0, .2) 0 2px 8px;
   opacity: .85;
   color: whitesmoke;
 }
 
-.css-1fdqkex.edgvbvh10:active, .css-czbs5b:active {
+.css-1fdqkex.edgvbvh10:active, .css-p48j5d:active {
   outline: 0;
 }
 
-.css-1fdqkex.edgvbvh10:focus, .css-czbs5b:active {
+.css-1fdqkex.edgvbvh10:focus, .css-p48j5d:active {
   box-shadow: rgba(0, 0, 0, .5) 0 0 0 3px;
 }
 
 @media (max-width: 420px) {
-  .css-1fdqkex.edgvbvh10, .css-czbs5b {
+  .css-1fdqkex.edgvbvh10, .css-p48j5d {
     height: 48px;
   }
 }
@@ -127,16 +127,20 @@
   font-size: 35px;
 }
 
-.st-bt {
+.st-ca {
   border-bottom-color: grey;
 }
-.st-bs {
+
+
+.st-c9 {
   border-top-color: grey;
 }
-.st-br {
+
+.st-c8 {
   border-right-color: grey;
 }
-.st-bq {
+
+.st-c7 {
   border-left-color: grey;
 }
 

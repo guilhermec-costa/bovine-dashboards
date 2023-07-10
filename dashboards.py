@@ -70,11 +70,12 @@ def start_app(user, queries_results):
     battery_mean_last48hours = float(queries_results.get('BATTERY_MEAN_LAST_48HOURS')[0][0])
     recent_metrics.append([battery_mean_last24hours, battery_mean_last48hours])
     recent_metrics = list(map(lambda x: f'{float(x)}V' if x is not None else 'No information', recent_metrics[0]))
-    if 'No information' not in (recent_metrics): diff_last_day = round(battery_mean_last24hours - battery_mean_last48hours, 2)
+    if 'No information' not in (recent_metrics): diff_last_day = round(battery_mean_last24hours - battery_mean_last48hours, 4)
     else: diff_last_day = None
     last_location = pd.DataFrame(queries_results.get('LAST_LOCATION'), columns=['Deveui', 'PLM', 'race_name', 'Longitude', 'Latitude', 'Name', 'Date', 'battery'])
     last_location.dropna(axis=0, subset=['Date'], inplace=True)
     last_location.sort_values(by='Date', ascending=False, inplace=True)
+    last_location['battery'] = last_location['battery'].astype(float)
 
     with st.sidebar:
         st.markdown('---')
@@ -147,14 +148,12 @@ def start_app(user, queries_results):
     filtered_df.df['Time'] = filtered_df.df['payloaddatetime'].apply(lambda x: x.time())
     filtered_df.df['CreatedAt'] = pd.to_datetime(filtered_df.df.CreatedAt)
 
-    c1_date, c2_date, c3_date, c4_date = st.columns(4)
+    c1_date, c2_date = st.columns(2)
     inicio = c1_date.date_input(label='Start date:', min_value=filtered_df.df['payloaddatetime'].min(), max_value=datetime.datetime.today(),
-                        key='data_inicio', value=datetime.datetime.now() - datetime.timedelta(days=2))
+                        key='data_inicio', value=datetime.datetime.now() - datetime.timedelta(days=1))
     fim = c2_date.date_input(label='End date:', min_value=filtered_df.df['CreatedAt'].min(),
-                    key='data_fim', value=datetime.datetime.now() + datetime.timedelta(days=1))
+                    key='data_fim', value=datetime.datetime.now())
     
-    hora_inicio = c3_date.time_input(label='Start time:', value=datetime.time(0,0))
-    hora_final = c4_date.time_input(label='End time', value=datetime.time(23, 59))
 
     inicio = datetime.datetime.combine(inicio, datetime.datetime.min.time(), tzinfo=pytz.UTC)
     fim = datetime.datetime.combine(fim, datetime.datetime.min.time(), tzinfo=pytz.UTC)
@@ -197,10 +196,6 @@ def start_app(user, queries_results):
     filtered_status_loc.apply_date_filter(start=inicio, end=fim, refer_column='Date')
     filtered_last_location.apply_date_filter(start=inicio, end=fim, refer_column='Date')
 
-    filtered_df.apply_time_filter(start_time=hora_inicio, end_time=hora_final, trigger_error=True)
-    filtered_status_loc.apply_time_filter(start_time=hora_inicio, end_time=hora_final)
-    filtered_last_location.apply_time_filter(start_time=hora_inicio, end_time=hora_final)
-
     download_status = []
     with st.expander('Download filtered data'):
         main_data = st.checkbox('Include battery historic dataset', value=False, key='main_data')
@@ -231,7 +226,7 @@ def start_app(user, queries_results):
 
     messages_per_day = filtered_df.df.groupby(by='PLM').count().reset_index()
     messages_per_day.rename(columns={'Deveui':'Sent Messages'}, inplace=True)
-    if messages_per_day.shape[0] > 1:
+    if messages_per_day.shape[0] >= 1:
         min_messages = int(messages_per_day['Sent Messages'].min())
         max_messages = int(messages_per_day['Sent Messages'].max())
     else:
@@ -246,6 +241,7 @@ def start_app(user, queries_results):
     st.write(boxplot_data['battery'].describe())
     st.plotly_chart(fig_boxplot, use_container_width=True)
     last_location_grouped = filtered_last_location.df.groupby(by='PLM').max().reset_index()
+    last_location_grouped = filtered_last_location.df.groupby(by='PLM').agg({'Date':'max'}).reset_index().merge(filtered_last_location.df, on=['PLM', 'Date'])
     relative_bov_qtd =  len(agrupado)
     bovine_chart = Bovine_plms.plot_scatter_plm(agrupado, date_period=[inicio, fim], qtd=relative_bov_qtd, id_kind=identifier_options)
 
@@ -281,7 +277,7 @@ def start_app(user, queries_results):
             messages_per_day.sort_values(by='PLM', ascending=True, inplace=True)
             concatenado.sort_values(by='PLM', ascending=True, inplace=True)
 
-        if len(messages_per_day) > 1:
+        if len(messages_per_day) > 1 and min_messages != max_messages:
             min_messages, max_messages = c_switch.slider(label='Messages Range', value=[min_messages, max_messages], 
                                                         min_value=min_messages, max_value=max_messages)
         
@@ -291,6 +287,12 @@ def start_app(user, queries_results):
         last_bat = last_battery_chart_fig.last_battery(data=concatenado)
         st.plotly_chart(messages_chart, use_container_width=True)
         st.plotly_chart(last_bat, use_container_width=True)
+
+    col_status, *_ = st.columns(9)
+    status_opcs = col_status.multiselect('Status filters', options=['Valid location', 'Invalid location'])
+    if len(status_opcs) >= 1:
+        filtered_status_loc.apply_status_filter(options=status_opcs)
+        st.session_state.status_opcs = status_opcs
 
     status_loc_agrupado = filtered_status_loc.df.groupby(by=['Mes-Dia', 'Status']).count()['PLM']
     status_loc_agrupado.index = pd.MultiIndex.from_tuples(
@@ -315,9 +317,7 @@ def start_app(user, queries_results):
                         barmode = barmode_widget.selectbox('Choose a barmode:', options=['Group', 'Stack'], index=0)
 
                     if st.form_submit_button('Apply filters'):
-                        if len(status_opcs) >= 1:
-                            filtered_status_loc.apply_status_filter(options=status_opcs)
-                            st.session_state.status_opcs = status_opcs
+                        pass
 
             status_loc_unstacked = status_loc_agrupado.sort_index(level=0).unstack(level=1)
             loc_status_count_chart = location_status_chart.count_location_status(status_loc_unstacked,
@@ -348,6 +348,7 @@ def start_app(user, queries_results):
     choosed_theme = theme_position.selectbox('Choose any theme', options=theme_options, index=0)
     last_location_chart = last_location_map.mapbox_last_location(last_location_grouped, theme=choosed_theme, ident = identifier_options)
     st.plotly_chart(last_location_chart, use_container_width=True)
+
 
 if __name__ == '__main__':
     st.set_page_config(layout='wide', page_title='Dashboards SpaceVis', page_icon=':bar_chart:', initial_sidebar_state='collapsed')
