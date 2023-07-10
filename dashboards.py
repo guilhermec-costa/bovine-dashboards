@@ -19,7 +19,6 @@ import constructors
 from queries.queries_runner import Queries
 from queries.queries_constants import queries_constants
 from zipfile import ZipFile
-import os
 from pathlib import Path
 from downloads_handler import manage_downloads
 
@@ -79,7 +78,7 @@ def start_app(user, queries_results):
 
     with st.sidebar:
         st.markdown('---')
-        st.title(f'Your welcome {user.capitalize()}!')
+        st.markdown(f'<h1>Your welcome <strong style="color: #FF9430; text-weight:bold;">{user.capitalize()}</strong>!</h1>', unsafe_allow_html=True)
         with st.spinner('Logging off...'):
             logout = login_authenticator.logout('Logout', 'main')
             st.session_state.logout = True if logout else False
@@ -147,6 +146,9 @@ def start_app(user, queries_results):
     filtered_df.df['payloaddatetime'] = pd.to_datetime(filtered_df.df.payloaddatetime)
     filtered_df.df['Time'] = filtered_df.df['payloaddatetime'].apply(lambda x: x.time())
     filtered_df.df['CreatedAt'] = pd.to_datetime(filtered_df.df.CreatedAt)
+
+    st.subheader('Filters')
+    st.markdown('---')
 
     c1_date, c2_date = st.columns(2)
     inicio = c1_date.date_input(label='Start date:', min_value=filtered_df.df['payloaddatetime'].min(), max_value=datetime.datetime.today(),
@@ -236,10 +238,6 @@ def start_app(user, queries_results):
     agrupado = filtered_df.df.groupby(by=identifier_options)
     boxplot_data = filtered_df.df[['PLM', 'battery', 'payloaddatetime']].copy()
     boxplot_data['payloaddatetime'] = boxplot_data['payloaddatetime'].dt.date
-    st.write(boxplot_data)
-    fig_boxplot = boxplot_battery.boxplot_battery(boxplot_data)
-    st.write(boxplot_data['battery'].describe())
-    st.plotly_chart(fig_boxplot, use_container_width=True)
     last_location_grouped = filtered_last_location.df.groupby(by='PLM').max().reset_index()
     last_location_grouped = filtered_last_location.df.groupby(by='PLM').agg({'Date':'max'}).reset_index().merge(filtered_last_location.df, on=['PLM', 'Date'])
     relative_bov_qtd =  len(agrupado)
@@ -257,6 +255,18 @@ def start_app(user, queries_results):
         switch = st_toggle_switch(label='See uplink and last battery figures', label_after=True, active_color='#F98800', inactive_color='#D3D3D3', track_color='#5E00F8')
     if not switch:
         st.plotly_chart(bovine_chart, use_container_width=True)
+        st.markdown('---')
+        st.markdown('###')
+        c_show_all_points, *_ = st.columns(5)
+        show_all_points = c_show_all_points.radio(label='Include:', options=['only outliers', 'inliers + outliers'], horizontal=True,
+                                                  key='boxplot_all_points', label_visibility='visible')
+        enable_grouping = c_show_all_points.checkbox('Group by individual bovine', value=False, key='boxplot_group_bovine')
+        
+        if enable_grouping:
+            boxplot_data = boxplot_data.groupby(by=['payloaddatetime', 'PLM']).agg({'battery':'mean'}).reset_index()
+            
+        fig_boxplot = boxplot_battery.boxplot_battery(boxplot_data, point_dist=show_all_points)
+        st.plotly_chart(fig_boxplot, use_container_width=True)
         st.markdown('---')
         barmode = 'group'
     else:
@@ -288,6 +298,9 @@ def start_app(user, queries_results):
         st.plotly_chart(messages_chart, use_container_width=True)
         st.plotly_chart(last_bat, use_container_width=True)
 
+    st.markdown('###')
+    st.title('Location analysis', anchor='analysis')
+    st.markdown('---')
     col_status, *_ = st.columns(9)
     status_opcs = col_status.multiselect('Status filters', options=['Valid location', 'Invalid location'])
     if len(status_opcs) >= 1:
@@ -342,6 +355,7 @@ def start_app(user, queries_results):
             fig_invalidos = location_status_count_chart.invalid_status_count(contagem_loc_invalida_agrupado)
             st.plotly_chart(fig_invalidos, use_container_width=True)
     
+    st.markdown('---')
     theme_position, *_ = st.columns(5)
     theme_options = ['satellite', 'satellite-streets', 'carto-positron', 'carto-darkmatter', 'dark', 'open-street-map', 'streets', 'stamen-terrain', 'stamen-toner',
                         'stamen-watercolor', 'basic', 'outdoors', 'light', 'white-bg']
@@ -351,7 +365,7 @@ def start_app(user, queries_results):
 
 
 if __name__ == '__main__':
-    st.set_page_config(layout='wide', page_title='Dashboards SpaceVis', page_icon=':bar_chart:', initial_sidebar_state='collapsed')
+    st.set_page_config(layout='wide', page_title='Dashboards SpaceVis', page_icon=':bar_chart:', initial_sidebar_state='expanded')
     st.markdown(streamlit_style, unsafe_allow_html=True) 
     initialize_session_state()
     queries = Queries()

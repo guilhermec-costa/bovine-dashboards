@@ -24,8 +24,8 @@ def plot_scatter_plm(data, date_period, qtd, id_kind):
                                         ),
                     legend=dict(orientation='v'), template='plotly', font_family='roboto')
     
-    fig.update_yaxes(tickfont=dict(size=16, family='roboto'), title=dict(text="Voltage", font=dict(size=18)))
-    fig.update_xaxes(tickfont=dict(size=16, family='roboto'), showgrid=True, griddash='dash')
+    fig.update_yaxes(tickfont=dict(size=16, family='roboto'), title=dict(text="Voltage", font=dict(size=18)), showline=True, linewidth=1, color='grey')
+    fig.update_xaxes(tickfont=dict(size=16, family='roboto'), showgrid=True, griddash='dash', showline=True, linewidth=1, color='grey')
 
     # alterando o design do cursor e da legenda
     alter_legend(fig=fig, title=id_kind)

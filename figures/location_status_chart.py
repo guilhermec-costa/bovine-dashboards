@@ -25,7 +25,7 @@ def location_status_chart(data):
 def count_location_status(data, mode: str, columns_to_add, barmode='group'):
     fig = go.Figure()
     for column in columns_to_add:
-        color = '#00D303' if column == 'Valid location' else '#DC1700'
+        color = '#1C8735' if column == 'Valid location' else '#96363F'
         if mode == 'Only Bars':
             fig.add_trace(go.Bar(x=data.index, y=data[column], name=column,marker=dict(color=color), text=data[column], textposition='auto'))  
             fig.update_layout(barmode=barmode)

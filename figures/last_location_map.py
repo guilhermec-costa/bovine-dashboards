@@ -2,9 +2,9 @@ import plotly.express as px
 from . import update_fig_elements
 
 def mapbox_last_location(data, theme: str, ident):
-    fig = px.scatter_mapbox(data_frame=data, lat='Latitude', lon='Longitude', hover_name='PLM', zoom=3, height=800, size_max=20, size='battery', color='battery',
+    fig = px.scatter_mapbox(data_frame=data, lat='Latitude', lon='Longitude', hover_name='PLM', zoom=2, height=750, size_max=20, size='battery', color='battery',
                             color_continuous_scale=px.colors.sequential.RdBu, center=(dict(lat=-20.65785026550293, lon=-51.5435791015625)),
-                            hover_data=['battery', 'Name', 'Deveui', 'race_name', 'Date'])
+                            hover_data=['battery', 'Name', 'Deveui', 'race_name', 'Date'], opacity=1)
     fig.update_layout(mapbox_style=theme, title=dict(
     text="Last bovine location", x=0.5, y=0.98,
     xanchor="center", yanchor="top", font=dict(size=27, color="white", family='roboto')),
