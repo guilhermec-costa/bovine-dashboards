@@ -76,9 +76,12 @@ def start_app(user, queries_results):
     last_location.sort_values(by='Date', ascending=False, inplace=True)
     last_location['battery'] = last_location['battery'].astype(float)
 
+    st.subheader('')
+    st.markdown('---')
     with st.sidebar:
+        st.title('Spacevis Dashboards :bar_chart:')
         st.markdown('---')
-        st.markdown(f'<h1>Your welcome <strong style="color: #FF9430; text-weight:bold;">{user.capitalize()}</strong>!</h1>', unsafe_allow_html=True)
+        st.markdown(f'<h2>Your welcome <strong style="color: #FF9430; text-weight:bold;">{user.capitalize()}</strong>!</h2>', unsafe_allow_html=True)
         with st.spinner('Logging off...'):
             logout = login_authenticator.logout('Logout', 'main')
             st.session_state.logout = True if logout else False
@@ -256,7 +259,6 @@ def start_app(user, queries_results):
     if not switch:
         st.plotly_chart(bovine_chart, use_container_width=True)
         st.markdown('---')
-        st.markdown('###')
         c_show_all_points, *_ = st.columns(5)
         show_all_points = c_show_all_points.radio(label='Include:', options=['only outliers', 'inliers + outliers'], horizontal=True,
                                                   key='boxplot_all_points', label_visibility='visible')
@@ -299,7 +301,7 @@ def start_app(user, queries_results):
         st.plotly_chart(last_bat, use_container_width=True)
 
     st.markdown('###')
-    st.title('Location analysis', anchor='analysis')
+    st.title('Location analysis', anchor=None)
     st.markdown('---')
     col_status, *_ = st.columns(9)
     status_opcs = col_status.multiselect('Status filters', options=['Valid location', 'Invalid location'])

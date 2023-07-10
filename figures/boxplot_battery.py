@@ -5,7 +5,6 @@ import datetime
 
 def boxplot_battery(data, point_dist):
     fig = go.Figure()
-    st.write(data['payloaddatetime'].max())
     boxpoints = 'all' if point_dist == 'inliers + outliers' else 'outliers'
     fig.add_trace(go.Box(x=data['payloaddatetime'], y=data['battery'], boxmean='sd', notched=False, line=dict(color='#71A3FA', width=2),
                          marker=dict(opacity=1, color='orange', outliercolor='red', size=7), jitter=0.5, boxpoints=boxpoints,
