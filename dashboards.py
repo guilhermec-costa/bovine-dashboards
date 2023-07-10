@@ -77,7 +77,6 @@ def start_app(user, queries_results):
     last_location['battery'] = last_location['battery'].astype(float)
 
     st.subheader('')
-    st.markdown('---')
     with st.sidebar:
         st.title('Spacevis Dashboards :bar_chart:')
         st.markdown('---')
