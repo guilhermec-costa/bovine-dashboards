@@ -76,7 +76,7 @@ def start_app(user, queries_results):
     last_location.sort_values(by='Date', ascending=False, inplace=True)
     last_location['battery'] = last_location['battery'].astype(float)
 
-    st.subheader('')
+    st.markdown("###")
     with st.sidebar:
         st.title('Spacevis Dashboards :bar_chart:')
         st.markdown('---')
@@ -124,6 +124,7 @@ def start_app(user, queries_results):
     
     style_metric_cards(background_color='#6D23FF', border_size_px=1.5, box_shadow=True, 
                     border_color='#39275B', border_radius_px=25, border_left_color='#39275B')
+    st.markdown("###")
 
     battery_expander = constructors.ExpanderConstructor(2, 'plotly_chart', (volt_ranges, pie_chart_limits), 'Battery perfomance', container_size=True)
     general_metrics = constructors.ExpanderConstructor(2, 'plotly_chart', (farm_chart, race_chart), 'General Metrics', container_size=True)
