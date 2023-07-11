@@ -92,8 +92,9 @@ def start_app(user, queries_results):
     battery_chart = battery_30days.line_battery_chart(data=battery_metrics_30days)
 
     # Tratamento de dados
-    location_status_data['Date'] = location_status_data['Date'].apply(lambda x: x if str(x) != '0001-01-01 00:00:00+00:00' else datetime.datetime.now(tz=pytz.timezone('Brazil/East')))
-    location_status_data['Date'] = pd.to_datetime(location_status_data['Date'], utc=True, errors='coerce')
+    location_status_data['Date'] = pd.to_datetime(location_status_data['Date'], errors='coerce')
+    location_status_data.dropna(axis=0, subset=['Date'], inplace=True)
+    location_status_data['Date'] = location_status_data['Date'].dt.tz_convert(pytz.timezone('Brazil/East'))
     location_status_data['Status'] = location_status_data['Status'].apply(lambda x: 'Valid location' if x else 'Invalid location')
     location_status_data['Mes-Dia'] = location_status_data['Date'].apply(lambda x: x.strftime('%b %d, %Y'))
     df['payloaddatetime'] = pd.to_datetime(df['payloaddatetime'], utc=True)
@@ -143,8 +144,7 @@ def start_app(user, queries_results):
     filtered_status_loc = Filters(data_frame=location_status_data)
     filtered_last_location = Filters(data_frame=last_location)
 
-    filtered_status_loc.df['Date'] = pd.to_datetime(filtered_status_loc.df.Date, errors='ignore')
-    filtered_status_loc.df['Time'] = filtered_status_loc.df['Date'].apply(lambda x: x.time())
+    filtered_status_loc.df['Time'] = filtered_status_loc.df['Date'].dt.time
     filtered_last_location.df['Time'] = filtered_last_location.df['Date'].apply(lambda x: x.time())
     filtered_df.df['payloaddatetime'] = pd.to_datetime(filtered_df.df.payloaddatetime)
     filtered_df.df['Time'] = filtered_df.df['payloaddatetime'].apply(lambda x: x.time())
@@ -312,7 +312,7 @@ def start_app(user, queries_results):
     status_loc_agrupado = filtered_status_loc.df.groupby(by=['Mes-Dia', 'Status']).count()['PLM']
     status_loc_agrupado.index = pd.MultiIndex.from_tuples(
     [(pd.to_datetime(date, format="%b %d, %Y"), status) for date, status in status_loc_agrupado.index])
-    filtered_status_loc.df['Date'] = filtered_status_loc.df['Date'].dt.date.apply(lambda x: datetime.datetime.strftime(x, '%b %d, %Y'))
+    filtered_status_loc.df['Date'] = filtered_status_loc.df['Date'].apply(lambda x: datetime.datetime.strftime(x, '%b %d, %Y'))
     status_loc_count_per_plm = filtered_status_loc.df.groupby(by=['PLM', 'Status', 'Date']).count()
 
     all_avalaible_status = set([tupla[1] for tupla in status_loc_count_per_plm.index])
@@ -326,7 +326,6 @@ def start_app(user, queries_results):
                     chart_mode, *_ = st.columns(6)
                     with chart_mode:
                         chart_mode_switch = st.radio(label='Choose a chart mode', options=['Only Bars', 'Only Lines', 'Mix'], horizontal=True)
-                        status_opcs = st.multiselect('Status filters', options=['Valid location', 'Invalid location'])
                     if chart_mode_switch == 'Only Bars':
                         barmode_widget, *_ = st.columns(6)
                         barmode = barmode_widget.selectbox('Choose a barmode:', options=['Group', 'Stack'], index=0)
