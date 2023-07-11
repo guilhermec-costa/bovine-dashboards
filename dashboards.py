@@ -263,11 +263,12 @@ def start_app(user, queries_results):
         show_all_points = c_show_all_points.radio(label='Include:', options=['only outliers', 'inliers + outliers'], horizontal=True,
                                                   key='boxplot_all_points', label_visibility='visible')
         enable_grouping = c_show_all_points.checkbox('Group by individual bovine', value=False, key='boxplot_group_bovine')
+        enable_annotations = c_show_all_points.checkbox('Enable annotations', value=False, key='boxplot_annotations')
         
         if enable_grouping:
             boxplot_data = boxplot_data.groupby(by=['payloaddatetime', 'PLM']).agg({'battery':'mean'}).reset_index()
             
-        fig_boxplot = boxplot_battery.boxplot_battery(boxplot_data, point_dist=show_all_points)
+        fig_boxplot = boxplot_battery.boxplot_battery(boxplot_data, point_dist=show_all_points, enable_annotations=enable_annotations)
         st.plotly_chart(fig_boxplot, use_container_width=True)
         st.markdown('---')
         barmode = 'group'
