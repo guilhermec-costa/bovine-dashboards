@@ -6,7 +6,7 @@ def plot_scatter_plm(data, date_period, qtd, id_kind):
     fig = go.Figure()
     for name, groups in data:
         groups.sort_values(by='payloaddatetime', inplace=True)
-        groups = groups[groups['payloaddatetime'].dt.month > 4]
+        # groups = groups[groups['payloaddatetime'].dt.month > 4]
         fig.add_trace(go.Scatter(x=groups['payloaddatetime'], y=groups['battery'], 
                             mode="markers+lines", line_shape='spline', name=name, hovertemplate= f'<i>{id_kind}: {name}</i>' + 
                                                                                                 '<br>Date: %{x}</br>' + 

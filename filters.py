@@ -28,11 +28,17 @@ margin: 4px;
 
 class Filters:
 
-    def __init__(self, data_frame) -> None:
+    def __init__(self, data_frame: pd.DataFrame) -> None:
         self.df = data_frame
         self.c1_date, self.c2_date = st.columns(2)
     
-    def validate_filter(self, filter_name, opcs=None, refer_column=None):
+    def __str__(self) -> str:
+        return 'Objeto DataFrame que pode ser filtrado'
+    
+    def __repr__(self) -> str:
+        return 'Filters(pandas.DataFrame())'
+    
+    def validate_filter(self, filter_name:str, opcs:list = None, refer_column:str =None) -> None:
         apply_filter = getattr(self, filter_name)
         if len(opcs) >= 1: 
             filtered_dataframe = apply_filter(opcs, refer_column)
@@ -51,7 +57,7 @@ class Filters:
                                unsafe_allow_html=True)
             self.c2_date.write(f'<div style="{style_markdown_warning}">Verify if START DATE is greater than END DATE. </div>', unsafe_allow_html=True)
 
-    def apply_time_filter(self, start_time, end_time, trigger_error=False):
+    def apply_time_filter(self, start_time:datetime.time, end_time: datetime.time, trigger_error:bool = False):
         if start_time < end_time:
             self.df = self.df[(self.df['Time'] >= start_time) & (self.df['Time'] <= end_time)]
             return
@@ -64,7 +70,7 @@ class Filters:
             self.c1_date.write(f'<div style="{style_markdown_error}">There is no data. Start time set to {default_start_time} and end time set to {default_end_time}. </div>', unsafe_allow_html=True)
             self.c2_date.write(f'<div style="{style_markdown_warning}">Verify if START TIME is greater than END TIME.</div>', unsafe_allow_html=True)
     
-    def apply_farm_filter(self, options, refer_column):
+    def apply_farm_filter(self, options:list, refer_column):
         self.df = self.df[self.df[refer_column].isin(options)]
     
     def apply_plm_filter(self, options, refer_column):

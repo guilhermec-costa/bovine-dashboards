@@ -76,7 +76,8 @@ GROUP BY race_name;
 """
 
 BATTERY_METRICS_30DAYS = """
-SELECT DISTINCT payloaddatetime::date, round(avg("battery"::numeric), 2), round(max("battery"::numeric),2), round(min("battery"::numeric),2)
+SELECT DISTINCT payloaddatetime::date, round(avg("battery"::numeric), 2), round(max("battery"::numeric),2), round(min("battery"::numeric),2),
+round(avg("battery"::numeric) + stddev_samp("battery"::numeric), 2), round(avg("battery"::numeric) - stddev_samp("battery"::numeric), 2)
 FROM public."bovinedashboards2v"
 WHERE payloaddatetime BETWEEN (current_date - interval '1' month) AND current_date + interval '1' day
 GROUP BY payloaddatetime::date

@@ -4,7 +4,7 @@ from .update_fig_elements import alter_hover, alter_legend
 def farm_chart(data):
     # colors = ['gold', 'darkorange']
     # fig = go.Figure(data=[go.Pie(labels=data.index, values=data[1])])
-    fig = px.pie(data_frame=data, labels='Farm_name', values='Qtd', names='Farm_name', color_discrete_sequence=px.colors.qualitative.Bold,
+    fig = px.pie(data_frame=data, labels='Farm_name', values='Qtd', names='Farm_name', color_discrete_sequence=px.colors.qualitative.Alphabet,
                  hover_name='Farm_name', hover_data=['Qtd'])
 
     fig.update_traces(textinfo='percent', textfont_size=20, marker=dict(line=dict(color='#230166', width=1)))

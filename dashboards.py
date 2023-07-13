@@ -62,7 +62,7 @@ def start_app(user, queries_results):
     bovine_per_race = pd.DataFrame(queries_results.get('BOVINE_PER_RACE'), columns=['Race_name', 'Qtd'])
     volts_categories = pd.DataFrame(queries_results.get('BATTERY_CATEGORIES'), columns=['Category', 'Quantity'])
     location_status_data = pd.DataFrame(queries_results.get('LOCATION_STATUS'), columns=['PLM', 'Deveui', 'Status', 'Date', 'race_name', 'Name'])
-    battery_metrics_30days = pd.DataFrame(queries_results.get('BATTERY_METRICS_30DAYS'), columns=['Date', 'Mean', 'Max', 'Min'])
+    battery_metrics_30days = pd.DataFrame(queries_results.get('BATTERY_METRICS_30DAYS'), columns=['Date', 'Mean', 'Max', 'Min', 'Mean_plus_std', 'Mean_minus_std'])
     bovine_registers = queries_results.get('BOVINE_NUMBER')[0][0]
     battery_mean_last_month = float(queries_results.get('BATTERY_MEAN_LAST_30DAYS')[0][0])
     battery_mean_last24hours = float(queries_results.get('BATTERY_MEAN_LAST_24HOURS')[0][0])
@@ -98,15 +98,16 @@ def start_app(user, queries_results):
     location_status_data['Status'] = location_status_data['Status'].apply(lambda x: 'Valid location' if x else 'Invalid location')
     location_status_data['Mes-Dia'] = location_status_data['Date'].apply(lambda x: x.strftime('%b %d, %Y'))
     df['payloaddatetime'] = pd.to_datetime(df['payloaddatetime'], utc=True)
+    df['payloaddatetime'] = df['payloaddatetime'].apply(lambda x: x.replace(tzinfo=pytz.timezone('Brazil/East')))
     df['battery'] = df['battery'].apply(lambda x: x / 1000 if x > 100 else x)
     df.rename(columns={'Identifier':'Deveui'}, inplace=True)
 
     filtered_24h = df[df['payloaddatetime'] >= limit_24h]
     filtered_48h = df[(df['payloaddatetime'] >= limit_48h) & (~df['PLM'].isin(filtered_24h['PLM']))]
     filtered_5days = df[(df['payloaddatetime'] >= limit_5days) & (~df['PLM'].isin(filtered_48h['PLM'])) & (~df['PLM'].isin(filtered_24h['PLM']))]
-    filtered_5days_more = df[(df['payloaddatetime'] < limit_5days) & ((~df['PLM'].isin(filtered_48h['PLM']))
+    filtered_5days_more = df[(df['payloaddatetime'] < limit_5days) & (~df['PLM'].isin(filtered_48h['PLM']))
                                                                     & (~df['PLM'].isin(filtered_24h['PLM']))
-                                                                    & (~df['PLM'].isin(filtered_5days)))]
+                                                                    & (~df['PLM'].isin(filtered_5days['PLM']))]
 
     values_limits = [len(filtered_24h['PLM'].unique()), len(filtered_48h['PLM'].unique()), len(filtered_5days['PLM'].unique()), len(filtered_5days_more['PLM'].unique())]
     df_limits = pd.DataFrame({'Qtd':values_limits}, index=['Sent messages last 24 hours', 'Sent messages last 48 hours', 'Sent messages last 5 days', 
@@ -133,7 +134,6 @@ def start_app(user, queries_results):
     
     battery_expander.build_expander()
     general_metrics.build_expander()
-    
     # Estilização da tabela principal
     # vw_tab_aggrid = GridBuilder(df, key='filtered_df.df')
     # tab_formatada, bovine_data = vw_tab_aggrid.grid_builder()
@@ -160,8 +160,8 @@ def start_app(user, queries_results):
                     key='data_fim', value=datetime.datetime.now())
     
 
-    inicio = datetime.datetime.combine(inicio, datetime.datetime.min.time(), tzinfo=pytz.UTC)
-    fim = datetime.datetime.combine(fim, datetime.datetime.min.time(), tzinfo=pytz.UTC)
+    inicio = datetime.datetime.combine(inicio, datetime.datetime.min.time(), tzinfo=pytz.timezone('Brazil/East'))
+    fim = datetime.datetime.combine(fim, datetime.datetime.min.time(), tzinfo=pytz.timezone('Brazil/East'))
     c1_farm, c2_race, c3_plm, c4_type_of_id = st.columns(4)
 
     farm_filter_opcs = c1_farm.multiselect(label='Choose a farm', options=filtered_df.df['Name'].unique(), key='farm_filter')
@@ -333,6 +333,7 @@ def start_app(user, queries_results):
 
                     if st.form_submit_button('Apply filters'):
                         pass
+            
 
             status_loc_unstacked = status_loc_agrupado.sort_index(level=0).unstack(level=1)
             loc_status_count_chart = location_status_chart.count_location_status(status_loc_unstacked,
